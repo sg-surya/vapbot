@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -19,7 +19,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { ArrowLeft, Save, Play, MessageSquare, Type, GitBranch, Globe, Clock, Image as ImageIcon, Plus, MoreHorizontal, Check, Trash2, Bot, X } from 'lucide-react';
+import { ArrowLeft, Save, Play, MessageSquare, Type as TypeIcon, GitBranch, Globe, Clock, Image as ImageIcon, Plus, MoreHorizontal, Check, Trash2, Bot, X } from 'lucide-react';
 import ChatPreview from '../components/ChatPreview';
 
 // Custom Node Design based on the provided image
@@ -35,7 +35,7 @@ const CustomNode = ({ data, isConnectable }: any) => {
       previewText = data.text || 'Empty message';
       break;
     case 'input':
-      Icon = Type;
+      Icon = TypeIcon;
       headerColor = 'text-orange-400';
       previewText = data.variable ? `Save to: ${data.variable}` : 'No variable';
       break;
@@ -67,7 +67,7 @@ const CustomNode = ({ data, isConnectable }: any) => {
   }
 
   return (
-    <div className="bg-[#1A1D24]/95 backdrop-blur-xl rounded-md border border-white/10 w-[180px] min-h-[150px] overflow-visible flex flex-col transition-all hover:border-white/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
+    <div className="bg-[#1A1D24]/95 backdrop-blur-xl rounded-md border border-white/10 w-[200px] min-h-[160px] overflow-visible flex flex-col transition-all hover:border-white/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
       <Handle type="target" position={Position.Left} isConnectable={isConnectable} className="w-2 h-6 bg-slate-500 border-none rounded-r-sm rounded-l-none -ml-[1px]" />
       
       {/* Header */}
@@ -76,7 +76,7 @@ const CustomNode = ({ data, isConnectable }: any) => {
           <div className={`flex items-center justify-center ${headerColor}`}>
             <Icon className="w-3 h-3" />
           </div>
-          <span className="text-[9px] font-mono text-slate-300 uppercase tracking-widest truncate max-w-[100px]">{data.label}</span>
+          <span className="text-[9px] font-mono text-slate-300 uppercase tracking-widest truncate max-w-[120px]">{data.label}</span>
         </div>
         <button 
           onClick={(e) => {
@@ -91,7 +91,7 @@ const CustomNode = ({ data, isConnectable }: any) => {
 
       {/* Body */}
       <div className="p-3 bg-transparent flex-1 flex flex-col justify-center">
-        <p className="text-[10px] text-slate-400 font-mono line-clamp-4 leading-relaxed">{previewText}</p>
+        <p className="text-[10px] text-slate-400 font-mono line-clamp-5 leading-relaxed">{previewText}</p>
       </div>
 
       {data.type === 'condition' ? (
@@ -140,6 +140,8 @@ export default function Builder() {
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStep, setGenerationStep] = useState('');
+  const [botName, setBotName] = useState('Flow Builder');
+  const hasGeneratedRef = useRef(false);
 
   useEffect(() => {
     const fetchFlow = async () => {
@@ -150,14 +152,17 @@ export default function Builder() {
         if (res.ok) {
           const data = await res.json();
           
-          // Fetch bot details to get published state
+          // Fetch bot details
           const botRes = await fetch(`/api/bots`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (botRes.ok) {
             const bots = await botRes.json();
             const currentBot = bots.find((b: any) => b.id === parseInt(botId!));
-            if (currentBot) setIsPublished(!!currentBot.published);
+            if (currentBot) {
+              setIsPublished(!!currentBot.published);
+              setBotName(currentBot.name);
+            }
           }
 
           if (data.nodes && data.nodes.length > 0) {
@@ -173,8 +178,9 @@ export default function Builder() {
               return match ? parseInt(match[1]) : 0;
             }));
             id = maxId + 1;
-          } else if (prompt) {
+          } else if (prompt && !hasGeneratedRef.current) {
             // Trigger AI Generation if flow is empty and prompt exists
+            hasGeneratedRef.current = true;
             generateAIFlow(prompt);
           }
         }
@@ -187,59 +193,134 @@ export default function Builder() {
 
   const generateAIFlow = async (userPrompt: string) => {
     setIsGenerating(true);
-    setGenerationStep('Analyzing requirements...');
-    await new Promise(r => setTimeout(r, 1500));
-    
-    setGenerationStep('Designing conversation structure...');
-    await new Promise(r => setTimeout(r, 2000));
-    
-    setGenerationStep('Optimizing flow logic...');
-    await new Promise(r => setTimeout(r, 1500));
+    setNodes([]);
+    setEdges([]);
 
-    setGenerationStep('Finalizing agent nodes...');
-    await new Promise(r => setTimeout(r, 1000));
-
-    // Simulated AI Flow Generation
-    const generatedNodes: Node[] = [
-      {
-        id: 'dndnode_0',
-        type: 'custom',
-        position: { x: 100, y: 100 },
-        data: { id: 'dndnode_0', label: 'Welcome Message', type: 'message', text: `Hello! I'm your AI assistant. How can I help you with ${userPrompt.toLowerCase()} today?`, onDelete: deleteNode }
-      },
-      {
-        id: 'dndnode_1',
-        type: 'custom',
-        position: { x: 400, y: 100 },
-        data: { id: 'dndnode_1', label: 'Get User Name', type: 'input', variable: 'user_name', onDelete: deleteNode }
-      },
-      {
-        id: 'dndnode_2',
-        type: 'custom',
-        position: { x: 700, y: 100 },
-        data: { id: 'dndnode_2', label: 'AI Processing', type: 'ai', prompt: `Generate a personalized greeting for {{user_name}} who is interested in ${userPrompt}`, onDelete: deleteNode }
-      },
-      {
-        id: 'dndnode_3',
-        type: 'custom',
-        position: { x: 1000, y: 100 },
-        data: { id: 'dndnode_3', label: 'Final Response', type: 'message', text: 'I have processed your request. Is there anything else you would like to know?', onDelete: deleteNode }
-      }
-    ];
-
-    const generatedEdges: Edge[] = [
-      { id: 'e0-1', source: 'dndnode_0', target: 'dndnode_1', type: 'smoothstep', animated: true },
-      { id: 'e1-2', source: 'dndnode_1', target: 'dndnode_2', type: 'smoothstep', animated: true },
-      { id: 'e2-3', source: 'dndnode_2', target: 'dndnode_3', type: 'smoothstep', animated: true }
-    ];
-
-    setNodes(generatedNodes);
-    setEdges(generatedEdges);
-    id = 4;
-    setIsGenerating(false);
-    
-    // Auto-save the generated flow
     try {
+      setGenerationStep('Analyzing requirements...');
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `You are an expert chatbot designer. Create a logical and comprehensive conversation flow for a chatbot based on this description: "${userPrompt}".
+        
+        The flow should include:
+        1. A welcome message.
+        2. Relevant questions to gather information (User Input).
+        3. AI-powered responses or processing steps.
+        4. Logical transitions.
+        
+        Return a JSON object with 'nodes' and 'edges' arrays.
+        Nodes must have:
+        - id: string (e.g., "dndnode_0", "dndnode_1", ...)
+        - type: "custom"
+        - position: { x: number, y: number } (Arrange them logically, e.g., starting at x:100, y:150 and moving right/down)
+        - data: { 
+            label: string (short title), 
+            type: "message" | "input" | "condition" | "api" | "delay" | "image" | "ai",
+            text?: string (for message),
+            variable?: string (for input/condition),
+            prompt?: string (for ai),
+            url?: string (for api/image),
+            method?: string (for api),
+            time?: string (for delay)
+          }
+        
+        Edges must have:
+        - id: string (e.g., "e0-1")
+        - source: string (node id)
+        - target: string (node id)
+        
+        Ensure the flow is complete and ready to use.`,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              nodes: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    id: { type: Type.STRING },
+                    type: { type: Type.STRING },
+                    position: {
+                      type: Type.OBJECT,
+                      properties: {
+                        x: { type: Type.NUMBER },
+                        y: { type: Type.NUMBER }
+                      }
+                    },
+                    data: {
+                      type: Type.OBJECT,
+                      properties: {
+                        label: { type: Type.STRING },
+                        type: { type: Type.STRING },
+                        text: { type: Type.STRING },
+                        variable: { type: Type.STRING },
+                        prompt: { type: Type.STRING },
+                        url: { type: Type.STRING },
+                        method: { type: Type.STRING },
+                        time: { type: Type.STRING }
+                      }
+                    }
+                  }
+                }
+              },
+              edges: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    id: { type: Type.STRING },
+                    source: { type: Type.STRING },
+                    target: { type: Type.STRING }
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      const result = JSON.parse(response.text || '{}');
+      const generatedNodes = result.nodes || [];
+      const generatedEdges = result.edges || [];
+
+      setGenerationStep('Designing conversation structure...');
+      await new Promise(r => setTimeout(r, 800));
+      
+      setGenerationStep('Optimizing flow logic...');
+      await new Promise(r => setTimeout(r, 800));
+      
+      setGenerationStep('Finalizing agent nodes...');
+      await new Promise(r => setTimeout(r, 500));
+
+      // Place nodes one by one for visual effect
+      for (let i = 0; i < generatedNodes.length; i++) {
+        const node = {
+          ...generatedNodes[i],
+          data: { ...generatedNodes[i].data, onDelete: deleteNode }
+        };
+        setNodes(prev => [...prev, node]);
+        
+        // Add edges connected to this node
+        const nodeEdges = generatedEdges.filter((e: any) => e.target === node.id);
+        if (nodeEdges.length > 0) {
+          setEdges(prev => [...prev, ...nodeEdges.map((e: any) => ({ ...e, type: 'smoothstep', animated: true }))]);
+        }
+        
+        await new Promise(r => setTimeout(r, 600));
+      }
+
+      // Update global ID counter
+      const maxId = Math.max(...generatedNodes.map((n: any) => {
+        const match = n.id.match(/dndnode_(\d+)/);
+        return match ? parseInt(match[1]) : 0;
+      }));
+      id = maxId + 1;
+
+      // Auto-save the generated flow
       await fetch(`/api/flows/${botId}`, {
         method: 'POST',
         headers: { 
@@ -248,8 +329,12 @@ export default function Builder() {
         },
         body: JSON.stringify({ nodes: generatedNodes, edges: generatedEdges })
       });
-    } catch (e) {
-      console.error('Failed to auto-save generated flow', e);
+
+    } catch (error) {
+      console.error('AI Generation error', error);
+      setGenerationStep('Generation failed. Please try again.');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -388,54 +473,59 @@ export default function Builder() {
 
       {/* Main Container */}
       <main className="flex-1 relative z-10 bg-[#0B0F19]/80 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden flex flex-col">
-        {/* Top Navigation Bar */}
-        <header className="h-14 border-b border-white/10 flex items-center justify-between px-4 shrink-0 bg-black/20">
-          <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/dashboard')} className="p-1.5 hover:bg-white/10 rounded-md text-slate-400 hover:text-white transition-colors">
+        {/* Top Navigation Bar - Minimal & Floating */}
+        <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-6 pointer-events-none">
+          {/* Left: Agent Info */}
+          <div className="flex items-center gap-3 pointer-events-auto">
+            <button onClick={() => navigate('/dashboard')} className="p-2 bg-[#1A1D24]/80 backdrop-blur-xl border border-white/10 rounded-xl text-slate-400 hover:text-white transition-colors shadow-lg">
               <ArrowLeft className="w-4 h-4" />
             </button>
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-gradient-to-br from-[#ff8a00] to-[#e52e71] rounded-md flex items-center justify-center text-white font-bold text-xs shadow-[0_0_10px_rgba(255,138,0,0.3)]">
-                V
+            <div className="flex items-center gap-2 bg-[#1A1D24]/80 backdrop-blur-xl border border-white/10 rounded-xl px-3 py-2 shadow-lg">
+              <div className="w-6 h-6 bg-gradient-to-br from-[#ff8a00] to-[#e52e71] rounded-md flex items-center justify-center text-white font-bold text-[10px] shadow-[0_0_10px_rgba(255,138,0,0.3)]">
+                {botName.charAt(0).toUpperCase()}
               </div>
-              <h1 className="font-mono text-slate-200 text-sm tracking-wide">Flow Builder</h1>
+              <h1 className="font-mono text-slate-200 text-xs tracking-wide truncate max-w-[150px]">{botName}</h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-1 text-[11px] font-mono text-slate-400 uppercase tracking-widest">
-            <button className="px-3 py-1 bg-white/10 text-white rounded-md border border-white/5">Build</button>
-            <span className="text-slate-600 px-1">&rsaquo;</span>
-            <button className="px-3 py-1 hover:bg-white/5 rounded-md transition-colors">Design</button>
-            <span className="text-slate-600 px-1">&rsaquo;</span>
-            <button className="px-3 py-1 hover:bg-white/5 rounded-md transition-colors">Settings</button>
-            <span className="text-slate-600 px-1">&rsaquo;</span>
-            <button className="px-3 py-1 hover:bg-white/5 rounded-md transition-colors">Share</button>
-            <span className="text-slate-600 px-1">&rsaquo;</span>
-            <button className="px-3 py-1 hover:bg-white/5 rounded-md transition-colors">Analyze</button>
+          {/* Center: Navigation Steps */}
+          <div className="flex items-center gap-1 pointer-events-auto text-[10px] font-mono text-slate-400 uppercase tracking-widest">
+            <div className="flex items-center gap-1 bg-[#1A1D24]/80 backdrop-blur-xl border border-white/10 rounded-xl px-1 py-1 shadow-lg">
+              <button className="px-3 py-1 bg-white/10 text-white rounded-lg border border-white/5">Build</button>
+              <span className="text-slate-600 px-0.5">&rsaquo;</span>
+              <button className="px-3 py-1 hover:bg-white/5 rounded-lg transition-colors">Design</button>
+              <span className="text-slate-600 px-0.5">&rsaquo;</span>
+              <button className="px-3 py-1 hover:bg-white/5 rounded-lg transition-colors">Settings</button>
+              <span className="text-slate-600 px-0.5">&rsaquo;</span>
+              <button className="px-3 py-1 hover:bg-white/5 rounded-lg transition-colors">Share</button>
+              <span className="text-slate-600 px-0.5">&rsaquo;</span>
+              <button className="px-3 py-1 hover:bg-white/5 rounded-lg transition-colors">Analyze</button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button onClick={handleSave} disabled={isSaving} className="px-3 py-1.5 flex items-center gap-2 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition-colors text-xs font-mono uppercase tracking-wider" title="Save">
+          {/* Right: Actions */}
+          <div className="flex items-center gap-2 pointer-events-auto">
+            <button onClick={handleSave} disabled={isSaving} className="px-4 py-2 flex items-center gap-2 rounded-xl bg-[#1A1D24]/80 backdrop-blur-xl border border-white/10 text-slate-300 hover:bg-white/10 transition-colors text-[10px] font-mono uppercase tracking-wider shadow-lg" title="Save">
               <Save className="w-3.5 h-3.5" />
               Save
             </button>
-            <button onClick={() => setIsChatOpen(true)} className="px-3 py-1.5 border border-white/10 text-slate-300 font-mono uppercase tracking-wider rounded-md hover:bg-white/5 transition-colors text-xs flex items-center gap-2">
+            <button onClick={() => setIsChatOpen(true)} className="px-4 py-2 bg-[#1A1D24]/80 backdrop-blur-xl border border-white/10 text-slate-300 font-mono uppercase tracking-wider rounded-xl hover:bg-white/5 transition-colors text-[10px] flex items-center gap-2 shadow-lg">
               <Play className="w-3.5 h-3.5" />
               Test
             </button>
             <button 
               onClick={handlePublish}
               disabled={isPublishing}
-              className={`px-4 py-1.5 font-mono uppercase tracking-wider rounded-md transition-all text-xs ${
+              className={`px-5 py-2 font-mono uppercase tracking-wider rounded-xl transition-all text-[10px] shadow-lg ${
                 isPublished 
-                  ? 'bg-green-500/20 text-green-400 border border-green-500/20 hover:bg-green-500/30' 
+                  ? 'bg-green-500/20 text-green-400 border border-green-500/20 hover:bg-green-500/30 backdrop-blur-xl' 
                   : 'bg-gradient-to-r from-[#ff8a00] to-[#e52e71] text-white hover:shadow-[0_0_15px_rgba(255,138,0,0.4)]'
               }`}
             >
               {isPublishing ? '...' : isPublished ? 'Published' : 'Publish'}
             </button>
           </div>
-        </header>
+        </div>
 
         {/* Main Builder Area */}
         <div className="flex-1 flex relative overflow-hidden">
@@ -471,7 +561,7 @@ export default function Builder() {
                     {showAddMenu && (
                       <div className="absolute top-12 left-0 bg-[#1A1D24]/95 backdrop-blur-xl rounded-md border border-white/10 w-48 py-1 z-50 animate-in fade-in slide-in-from-top-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
                         <button onClick={() => addNode('message')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><MessageSquare className="w-3.5 h-3.5 text-blue-400" /> Message</button>
-                        <button onClick={() => addNode('input')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><Type className="w-3.5 h-3.5 text-orange-400" /> User Input</button>
+                        <button onClick={() => addNode('input')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><TypeIcon className="w-3.5 h-3.5 text-orange-400" /> User Input</button>
                         <button onClick={() => addNode('condition')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><GitBranch className="w-3.5 h-3.5 text-purple-400" /> Condition</button>
                         <button onClick={() => addNode('api')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><Globe className="w-3.5 h-3.5 text-green-400" /> API Request</button>
                         <button onClick={() => addNode('delay')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><Clock className="w-3.5 h-3.5 text-yellow-400" /> Delay</button>
@@ -697,21 +787,25 @@ export default function Builder() {
       )}
       {/* AI Generation Overlay */}
       {isGenerating && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0B0F19]/90 backdrop-blur-md animate-in fade-in duration-500">
-          <div className="flex flex-col items-center text-center max-w-md px-6">
-            <div className="relative mb-12">
-              <div className="w-24 h-24 rounded-full border-2 border-orange-500/20 flex items-center justify-center">
-                <Bot className="w-12 h-12 text-orange-500 animate-pulse" />
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0B0F19]/40 backdrop-blur-[2px] animate-in fade-in duration-700 pointer-events-none">
+          <div className="flex flex-col items-center text-center max-w-sm w-full bg-[#11141B]/90 p-10 rounded-[2.5rem] border border-white/10 shadow-[inset_0_2px_20px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.05),0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
+            {/* Subtle light sweep effect */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.02] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+            
+            <div className="relative mb-8">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500/10 to-pink-500/10 border border-orange-500/20 flex items-center justify-center shadow-[inset_0_2px_10px_rgba(0,0,0,0.3)]">
+                <Bot className="w-8 h-8 text-orange-500/80 animate-pulse" />
               </div>
-              <div className="absolute inset-0 rounded-full border-2 border-t-orange-500 border-r-transparent border-b-transparent border-l-transparent animate-spin duration-1000"></div>
-              <div className="absolute -inset-4 bg-orange-500/10 blur-2xl rounded-full animate-pulse"></div>
+              <div className="absolute -inset-4 bg-orange-500/5 blur-2xl rounded-full animate-pulse"></div>
             </div>
             
-            <h2 className="text-2xl font-medium text-white mb-3 tracking-tight">AI is thinking...</h2>
-            <p className="text-slate-400 font-light mb-8 h-6">{generationStep}</p>
+            <div className="space-y-1 mb-8">
+              <h2 className="text-sm font-mono text-white/90 uppercase tracking-[0.3em]">Architecting</h2>
+              <p className="text-slate-500 font-mono text-[9px] uppercase tracking-widest h-4 animate-pulse">{generationStep}</p>
+            </div>
             
-            <div className="w-64 h-1 bg-white/5 rounded-full overflow-hidden relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-pink-500 animate-progress origin-left"></div>
+            <div className="w-32 h-[1px] bg-white/5 rounded-full overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-orange-500/40 to-transparent bg-[length:200%_100%] animate-shimmer"></div>
             </div>
           </div>
         </div>

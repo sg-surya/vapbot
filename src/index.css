@@ -46,6 +46,17 @@
     --radius-2xl: calc(var(--radius) * 1.8);
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
+
+    @keyframes shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+    @keyframes progress {
+        0% { transform: scaleX(0); }
+        100% { transform: scaleX(1); }
+    }
+    --animate-shimmer: shimmer 3s infinite linear;
+    --animate-progress: progress 5s ease-out forwards;
 }
 
 :root {

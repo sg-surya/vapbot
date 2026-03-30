@@ -421,7 +421,7 @@ export default function Dashboard() {
       {/* Create Bot Modal */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className={`bg-[#11141B]/95 backdrop-blur-3xl border border-white/5 rounded-2xl p-8 w-full ${createStep === 3 ? 'max-w-md' : 'max-w-4xl'} relative transition-all duration-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),inset_0_2px_15px_rgba(0,0,0,0.5)]`}>
+          <div className={`bg-[#11141B]/95 backdrop-blur-3xl border border-white/5 rounded-2xl p-8 w-full max-w-4xl relative transition-all duration-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),inset_0_2px_15px_rgba(0,0,0,0.5)]`}>
             <button 
               onClick={() => setIsCreateModalOpen(false)}
               className="absolute top-4 right-4 p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors z-10"
@@ -432,7 +432,7 @@ export default function Dashboard() {
             {createStep > 1 && (
               <button 
                 onClick={() => setCreateStep((prev) => (prev - 1) as 1 | 2 | 3)}
-                className="absolute top-4 left-4 p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors z-10"
+                className="absolute top-6 left-6 p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors z-10"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
@@ -440,7 +440,7 @@ export default function Dashboard() {
 
             {createStep === 1 ? (
               <div className="text-center">
-                <h2 className="text-2xl font-medium text-white mb-10">What kind of agent are you going to launch?</h2>
+                <h2 className="text-2xl font-medium text-white mb-10 mt-12">What kind of agent are you going to launch?</h2>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
                   {/* Web */}
@@ -498,7 +498,7 @@ export default function Dashboard() {
               </div>
             ) : createStep === 2 ? (
               <div className="text-center animate-in slide-in-from-right-4 duration-300">
-                <h2 className="text-3xl font-medium text-white mb-10">Start building!</h2>
+                <h2 className="text-3xl font-medium text-white mb-10 mt-12">Start building!</h2>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
                   {/* Build it for me */}
@@ -543,7 +543,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="animate-in slide-in-from-right-4 duration-300">
-                <h2 className="text-xl font-medium text-white mb-4">
+                <h2 className="text-xl font-medium text-white mb-4 mt-12">
                   {creationMethod === 'ai' ? 'Describe your agent' : `Name your ${selectedAgentType} agent`}
                 </h2>
                 <form onSubmit={submitCreateBot}>
