@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Node, Edge } from '@xyflow/react';
-import { Send, Bot, User, Loader2, AlertCircle } from 'lucide-react';
+import { Send, Bot, User, Loader2, AlertCircle, Sun, Moon } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
+import { useThemeStore } from '../store/themeStore';
 
 interface Message {
   id: string;
@@ -14,6 +15,7 @@ interface Message {
 
 export default function PublishedBot() {
   const { botId } = useParams();
+  const { theme, toggleTheme } = useThemeStore();
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
   const [loading, setLoading] = useState(true);
@@ -202,10 +204,10 @@ export default function PublishedBot() {
 
   if (loading) {
     return (
-      <div className="h-screen w-screen bg-[#0B0F19] flex items-center justify-center text-white">
+      <div className="h-screen w-screen bg-background flex items-center justify-center text-foreground">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-10 h-10 text-orange-500 animate-spin" />
-          <p className="font-mono text-xs uppercase tracking-widest text-slate-400">Initializing Agent...</p>
+          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Initializing Agent...</p>
         </div>
       </div>
     );
@@ -213,16 +215,16 @@ export default function PublishedBot() {
 
   if (error) {
     return (
-      <div className="h-screen w-screen bg-[#0B0F19] flex items-center justify-center text-white p-4">
-        <div className="max-w-md w-full bg-[#1A1D24] border border-white/10 rounded-2xl p-8 text-center shadow-2xl">
+      <div className="h-screen w-screen bg-background flex items-center justify-center text-foreground p-4">
+        <div className="max-w-md w-full bg-card border border-border rounded-2xl p-8 text-center shadow-2xl">
           <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
             <AlertCircle className="w-8 h-8 text-red-500" />
           </div>
           <h1 className="text-xl font-medium mb-2">Access Denied</h1>
-          <p className="text-slate-400 text-sm mb-8">{error}</p>
+          <p className="text-muted-foreground text-sm mb-8">{error}</p>
           <button 
             onClick={() => window.location.reload()}
-            className="px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors text-sm"
+            className="px-6 py-2 bg-accent/5 hover:bg-accent/10 border border-border rounded-xl transition-colors text-sm"
           >
             Try Again
           </button>
@@ -232,24 +234,32 @@ export default function PublishedBot() {
   }
 
   return (
-    <div className="h-screen w-screen bg-[#0B0F19] text-white font-sans flex flex-col relative overflow-hidden">
+    <div className="h-screen w-screen bg-background text-foreground font-sans flex flex-col relative overflow-hidden">
       {/* Cinematic Background Layers */}
       <div className="absolute inset-0 pointer-events-none z-0">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-[0.2]"></div>
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-orange-600/5 blur-[120px] rounded-full mix-blend-screen"></div>
       </div>
 
       {/* Header */}
-      <header className="h-16 border-b border-white/10 flex items-center justify-between px-6 bg-black/20 backdrop-blur-md relative z-10">
+      <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-accent/5 backdrop-blur-md relative z-10">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ff8a00] to-[#e52e71] flex items-center justify-center text-white font-bold shadow-[0_0_15px_rgba(255,138,0,0.3)]">
             V
           </div>
-          <h2 className="font-mono text-xs uppercase tracking-widest text-slate-200">AI Agent</h2>
+          <h2 className="font-mono text-xs uppercase tracking-widest text-foreground">AI Agent</h2>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
-          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Live</span>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={toggleTheme}
+            className="p-2 rounded-md hover:bg-accent/10 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
+            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Live</span>
+          </div>
         </div>
       </header>
 
@@ -261,18 +271,18 @@ export default function PublishedBot() {
             className={`flex gap-4 ${msg.sender === 'user' ? 'flex-row-reverse' : ''} animate-in fade-in slide-in-from-bottom-4 duration-300`}
           >
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-lg ${
-              msg.sender === 'user' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/20' : 'bg-white/10 text-slate-300 border border-white/10'
+              msg.sender === 'user' ? 'bg-orange-500/20 text-orange-500 border border-orange-500/20' : 'bg-accent/10 text-muted-foreground border border-border'
             }`}>
               {msg.sender === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
             </div>
             <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm font-mono leading-relaxed shadow-xl ${
               msg.sender === 'user' 
                 ? 'bg-gradient-to-r from-[#ff8a00] to-[#e52e71] text-white' 
-                : 'bg-[#1A1D24]/80 backdrop-blur-md border border-white/10 text-slate-200'
+                : 'bg-card/80 backdrop-blur-md border border-border text-foreground'
             }`}>
-              {msg.type === 'image' ? (
+              {msg.type === 'image' && msg.url ? (
                 <div className="space-y-3">
-                  <img src={msg.url} alt="Bot content" className="rounded-xl max-w-full h-auto border border-white/5 shadow-2xl" referrerPolicy="no-referrer" />
+                  <img src={msg.url} alt="Bot content" className="rounded-xl max-w-full h-auto border border-border/50 shadow-2xl" referrerPolicy="no-referrer" />
                   <p>{msg.text}</p>
                 </div>
               ) : (
@@ -283,13 +293,13 @@ export default function PublishedBot() {
         ))}
         {isBotThinking && (
           <div className="flex gap-4">
-            <div className="w-9 h-9 rounded-xl bg-white/10 text-slate-300 border border-white/10 flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-accent/10 text-muted-foreground border border-border flex items-center justify-center shrink-0">
               <Bot className="w-4 h-4" />
             </div>
-            <div className="bg-[#1A1D24]/80 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-              <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-              <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            <div className="bg-card/80 backdrop-blur-md border border-border rounded-2xl px-4 py-3 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
             </div>
           </div>
         )}
@@ -297,7 +307,7 @@ export default function PublishedBot() {
       </div>
 
       {/* Input Area */}
-      <div className="p-6 bg-black/20 border-t border-white/10 backdrop-blur-xl relative z-10">
+      <div className="p-6 bg-accent/5 border-t border-border backdrop-blur-xl relative z-10">
         <div className="max-w-3xl mx-auto">
           <form onSubmit={handleSend} className="flex gap-3">
             <input 
@@ -305,7 +315,7 @@ export default function PublishedBot() {
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={isWaitingForInput ? "Type your message..." : "Agent is processing..."}
               disabled={!isWaitingForInput}
-              className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all font-mono text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-inner"
+              className="flex-1 bg-accent/5 border border-border rounded-2xl px-5 py-4 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all font-mono text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-inner"
             />
             <button 
               type="submit" 
@@ -315,7 +325,7 @@ export default function PublishedBot() {
               <Send className="w-5 h-5" />
             </button>
           </form>
-          <p className="text-center text-[9px] text-slate-600 font-mono uppercase tracking-widest mt-4">
+          <p className="text-center text-[9px] text-muted-foreground/50 font-mono uppercase tracking-widest mt-4">
             Powered by VapBot AI Builder
           </p>
         </div>

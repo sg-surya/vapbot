@@ -225,7 +225,7 @@ export default function ChatPreview({ nodes, edges, onClose }: ChatPreviewProps)
                 ? 'bg-gradient-to-r from-[#ff8a00] to-[#e52e71] text-white shadow-[0_4px_15px_rgba(255,138,0,0.2)]' 
                 : 'bg-black/40 border border-white/10 text-slate-200'
             }`}>
-              {msg.type === 'image' ? (
+              {msg.type === 'image' && msg.url ? (
                 <div className="space-y-2">
                   <img src={msg.url} alt="Bot content" className="rounded-md max-w-full h-auto border border-white/5" referrerPolicy="no-referrer" />
                   <p>{msg.text}</p>

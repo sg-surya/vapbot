@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { useThemeStore } from '../store/themeStore';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -18,7 +19,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { ArrowLeft, Save, Play, MessageSquare, Type, GitBranch, Globe, Clock, Image as ImageIcon, Plus, MoreHorizontal, Check, Trash2, Bot, X } from 'lucide-react';
+import { ArrowLeft, Save, Play, MessageSquare, Type, GitBranch, Globe, Clock, Image as ImageIcon, Plus, MoreHorizontal, Check, Trash2, Bot, X, Sun, Moon } from 'lucide-react';
 import ChatPreview from '../components/ChatPreview';
 
 // Custom Node Design based on the provided image
@@ -66,23 +67,23 @@ const CustomNode = ({ data, isConnectable }: any) => {
   }
 
   return (
-    <div className="bg-[#1A1D24]/95 backdrop-blur-xl rounded-md shadow-2xl border border-white/10 min-w-[240px] overflow-visible flex flex-col transition-all hover:border-white/30">
-      <Handle type="target" position={Position.Left} isConnectable={isConnectable} className="w-2 h-6 bg-slate-500 border-none rounded-r-sm rounded-l-none -ml-[1px]" />
+    <div className="bg-card/95 backdrop-blur-xl rounded-md shadow-2xl border border-border min-w-[240px] overflow-visible flex flex-col transition-all hover:border-foreground/30">
+      <Handle type="target" position={Position.Left} isConnectable={isConnectable} className="w-2 h-6 bg-muted-foreground border-none rounded-r-sm rounded-l-none -ml-[1px]" />
       
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 bg-black/20 rounded-t-md">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-accent/10 rounded-t-md">
         <div className="flex items-center gap-3">
           <div className={`flex items-center justify-center ${headerColor}`}>
             <Icon className="w-3.5 h-3.5" />
           </div>
-          <span className="text-[10px] font-mono text-slate-300 uppercase tracking-widest">{data.label}</span>
+          <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">{data.label}</span>
         </div>
         <button 
           onClick={(e) => {
             e.stopPropagation();
             data.onDelete(data.id);
           }}
-          className="text-slate-500 hover:text-red-400 transition-colors"
+          className="text-muted-foreground hover:text-red-400 transition-colors"
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
@@ -90,22 +91,22 @@ const CustomNode = ({ data, isConnectable }: any) => {
 
       {/* Body */}
       <div className="p-3 bg-transparent">
-        <p className="text-[11px] text-slate-400 font-mono truncate">{previewText}</p>
+        <p className="text-[11px] text-muted-foreground font-mono truncate">{previewText}</p>
       </div>
 
       {data.type === 'condition' ? (
-        <div className="flex flex-col border-t border-white/5">
-           <div className="relative flex items-center justify-between bg-black/10 text-slate-400 text-[10px] uppercase font-mono px-3 py-1.5 border-b border-white/5 hover:bg-white/5 transition-colors">
+        <div className="flex flex-col border-t border-border/50">
+           <div className="relative flex items-center justify-between bg-accent/5 text-muted-foreground text-[10px] uppercase font-mono px-3 py-1.5 border-b border-border/50 hover:bg-accent/10 transition-colors">
              <span>True</span>
              <Handle type="source" position={Position.Right} id="true" isConnectable={isConnectable} className="w-2 h-6 bg-green-500/80 border-none rounded-l-sm rounded-r-none -mr-[1px] !relative !right-[-13px] !transform-none" />
            </div>
-           <div className="relative flex items-center justify-between bg-black/10 text-slate-400 text-[10px] uppercase font-mono px-3 py-1.5 hover:bg-white/5 transition-colors rounded-b-md">
+           <div className="relative flex items-center justify-between bg-accent/5 text-muted-foreground text-[10px] uppercase font-mono px-3 py-1.5 hover:bg-accent/10 transition-colors rounded-b-md">
              <span>False</span>
              <Handle type="source" position={Position.Right} id="false" isConnectable={isConnectable} className="w-2 h-6 bg-red-500/80 border-none rounded-l-sm rounded-r-none -mr-[1px] !relative !right-[-13px] !transform-none" />
            </div>
         </div>
       ) : (
-        <Handle type="source" position={Position.Right} isConnectable={isConnectable} className="w-2 h-6 bg-slate-500 border-none rounded-l-sm rounded-r-none -mr-[1px]" />
+        <Handle type="source" position={Position.Right} isConnectable={isConnectable} className="w-2 h-6 bg-muted-foreground border-none rounded-l-sm rounded-r-none -mr-[1px]" />
       )}
     </div>
   );
@@ -122,6 +123,7 @@ const getId = () => `dndnode_${id++}`;
 export default function Builder() {
   const { botId } = useParams();
   const { token, user, logout } = useAuthStore();
+  const { theme, toggleTheme } = useThemeStore();
   const navigate = useNavigate();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   
@@ -303,48 +305,55 @@ export default function Builder() {
   };
 
   return (
-    <div className="h-screen w-screen bg-[#0B0F19] text-white font-sans relative overflow-hidden flex p-[3px]">
+    <div className="h-screen w-screen bg-background text-foreground font-sans relative overflow-hidden flex p-[3px]">
       {/* Cinematic Background Layers */}
       <div className="absolute inset-0 pointer-events-none z-0">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-[0.2]"></div>
         <div className="absolute inset-0 opacity-[0.04] mix-blend-screen" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}></div>
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-purple-600/10 blur-[120px] rounded-full mix-blend-screen"></div>
       </div>
 
       {/* Main Container */}
-      <main className="flex-1 relative z-10 bg-[#0B0F19]/80 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden flex flex-col">
+      <main className="flex-1 relative z-10 bg-card/40 backdrop-blur-2xl border border-border rounded-xl overflow-hidden flex flex-col">
         {/* Top Navigation Bar */}
-        <header className="h-14 border-b border-white/10 flex items-center justify-between px-4 shrink-0 bg-black/20">
+        <header className="h-14 border-b border-border flex items-center justify-between px-4 shrink-0 bg-accent/5">
           <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/dashboard')} className="p-1.5 hover:bg-white/10 rounded-md text-slate-400 hover:text-white transition-colors">
+            <button onClick={() => navigate('/dashboard')} className="p-1.5 hover:bg-accent/10 rounded-md text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="w-4 h-4" />
             </button>
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 bg-gradient-to-br from-[#ff8a00] to-[#e52e71] rounded-md flex items-center justify-center text-white font-bold text-xs shadow-[0_0_10px_rgba(255,138,0,0.3)]">
                 V
               </div>
-              <h1 className="font-mono text-slate-200 text-sm tracking-wide">Flow Builder</h1>
+              <h1 className="font-mono text-foreground text-sm tracking-wide">Flow Builder</h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-1 text-[11px] font-mono text-slate-400 uppercase tracking-widest">
-            <button className="px-3 py-1 bg-white/10 text-white rounded-md border border-white/5">Build</button>
-            <span className="text-slate-600 px-1">&rsaquo;</span>
-            <button className="px-3 py-1 hover:bg-white/5 rounded-md transition-colors">Design</button>
-            <span className="text-slate-600 px-1">&rsaquo;</span>
-            <button className="px-3 py-1 hover:bg-white/5 rounded-md transition-colors">Settings</button>
-            <span className="text-slate-600 px-1">&rsaquo;</span>
-            <button className="px-3 py-1 hover:bg-white/5 rounded-md transition-colors">Share</button>
-            <span className="text-slate-600 px-1">&rsaquo;</span>
-            <button className="px-3 py-1 hover:bg-white/5 rounded-md transition-colors">Analyze</button>
+          <div className="flex items-center gap-1 text-[11px] font-mono text-muted-foreground uppercase tracking-widest">
+            <button className="px-3 py-1 bg-accent/10 text-foreground rounded-md border border-border">Build</button>
+            <span className="text-muted-foreground/30 px-1">&rsaquo;</span>
+            <button className="px-3 py-1 hover:bg-accent/5 rounded-md transition-colors">Design</button>
+            <span className="text-muted-foreground/30 px-1">&rsaquo;</span>
+            <button className="px-3 py-1 hover:bg-accent/5 rounded-md transition-colors">Settings</button>
+            <span className="text-muted-foreground/30 px-1">&rsaquo;</span>
+            <button className="px-3 py-1 hover:bg-accent/5 rounded-md transition-colors">Share</button>
+            <span className="text-muted-foreground/30 px-1">&rsaquo;</span>
+            <button className="px-3 py-1 hover:bg-accent/5 rounded-md transition-colors">Analyze</button>
           </div>
 
           <div className="flex items-center gap-2">
-            <button onClick={handleSave} disabled={isSaving} className="px-3 py-1.5 flex items-center gap-2 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition-colors text-xs font-mono uppercase tracking-wider" title="Save">
+            <button 
+              onClick={toggleTheme}
+              className="p-2 rounded-md hover:bg-accent/10 text-muted-foreground hover:text-foreground transition-colors"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <button onClick={handleSave} disabled={isSaving} className="px-3 py-1.5 flex items-center gap-2 rounded-md bg-accent/5 border border-border text-muted-foreground hover:bg-accent/10 hover:text-foreground transition-colors text-xs font-mono uppercase tracking-wider" title="Save">
               <Save className="w-3.5 h-3.5" />
               Save
             </button>
-            <button onClick={() => setIsChatOpen(true)} className="px-3 py-1.5 border border-white/10 text-slate-300 font-mono uppercase tracking-wider rounded-md hover:bg-white/5 transition-colors text-xs flex items-center gap-2">
+            <button onClick={() => setIsChatOpen(true)} className="px-3 py-1.5 border border-border text-muted-foreground font-mono uppercase tracking-wider rounded-md hover:bg-accent/5 hover:text-foreground transition-colors text-xs flex items-center gap-2">
               <Play className="w-3.5 h-3.5" />
               Test
             </button>
@@ -353,7 +362,7 @@ export default function Builder() {
               disabled={isPublishing}
               className={`px-4 py-1.5 font-mono uppercase tracking-wider rounded-md transition-all text-xs ${
                 isPublished 
-                  ? 'bg-green-500/20 text-green-400 border border-green-500/20 hover:bg-green-500/30' 
+                  ? 'bg-green-500/20 text-green-500 border border-green-500/20 hover:bg-green-500/30' 
                   : 'bg-gradient-to-r from-[#ff8a00] to-[#e52e71] text-white hover:shadow-[0_0_15px_rgba(255,138,0,0.4)]'
               }`}
             >
@@ -388,39 +397,39 @@ export default function Builder() {
                   <div className="relative">
                     <button 
                       onClick={() => setShowAddMenu(!showAddMenu)}
-                      className="w-10 h-10 bg-[#1A1D24] hover:bg-white/10 border border-white/10 backdrop-blur-md text-white rounded-md flex items-center justify-center shadow-lg transition-all"
+                      className="w-10 h-10 bg-card hover:bg-accent/10 border border-border backdrop-blur-md text-foreground rounded-md flex items-center justify-center shadow-lg transition-all"
                     >
                       <Plus className="w-5 h-5" />
                     </button>
                     
                     {showAddMenu && (
-                      <div className="absolute top-12 left-0 bg-[#1A1D24]/95 backdrop-blur-xl rounded-md shadow-2xl border border-white/10 w-48 py-1 z-50 animate-in fade-in slide-in-from-top-2">
-                        <button onClick={() => addNode('message')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><MessageSquare className="w-3.5 h-3.5 text-blue-400" /> Message</button>
-                        <button onClick={() => addNode('input')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><Type className="w-3.5 h-3.5 text-orange-400" /> User Input</button>
-                        <button onClick={() => addNode('condition')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><GitBranch className="w-3.5 h-3.5 text-purple-400" /> Condition</button>
-                        <button onClick={() => addNode('api')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><Globe className="w-3.5 h-3.5 text-green-400" /> API Request</button>
-                        <button onClick={() => addNode('delay')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><Clock className="w-3.5 h-3.5 text-yellow-400" /> Delay</button>
-                        <button onClick={() => addNode('image')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><ImageIcon className="w-3.5 h-3.5 text-pink-400" /> Image</button>
-                        <button onClick={() => addNode('ai')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><Bot className="w-3.5 h-3.5 text-indigo-400" /> AI Response</button>
+                      <div className="absolute top-12 left-0 bg-card/95 backdrop-blur-xl rounded-md shadow-2xl border border-border w-48 py-1 z-50 animate-in fade-in slide-in-from-top-2">
+                        <button onClick={() => addNode('message')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-accent/5 flex items-center gap-3 text-muted-foreground transition-colors"><MessageSquare className="w-3.5 h-3.5 text-blue-400" /> Message</button>
+                        <button onClick={() => addNode('input')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-accent/5 flex items-center gap-3 text-muted-foreground transition-colors"><Type className="w-3.5 h-3.5 text-orange-400" /> User Input</button>
+                        <button onClick={() => addNode('condition')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-accent/5 flex items-center gap-3 text-muted-foreground transition-colors"><GitBranch className="w-3.5 h-3.5 text-purple-400" /> Condition</button>
+                        <button onClick={() => addNode('api')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-accent/5 flex items-center gap-3 text-muted-foreground transition-colors"><Globe className="w-3.5 h-3.5 text-green-400" /> API Request</button>
+                        <button onClick={() => addNode('delay')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-accent/5 flex items-center gap-3 text-muted-foreground transition-colors"><Clock className="w-3.5 h-3.5 text-yellow-400" /> Delay</button>
+                        <button onClick={() => addNode('image')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-accent/5 flex items-center gap-3 text-muted-foreground transition-colors"><ImageIcon className="w-3.5 h-3.5 text-pink-400" /> Image</button>
+                        <button onClick={() => addNode('ai')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-accent/5 flex items-center gap-3 text-muted-foreground transition-colors"><Bot className="w-3.5 h-3.5 text-indigo-400" /> AI Response</button>
                       </div>
                     )}
                   </div>
                 </Panel>
 
-                <Controls className="bg-[#1A1D24]/80 border-white/10 fill-slate-400 shadow-lg rounded-md overflow-hidden backdrop-blur-md" showInteractive={false} />
+                <Controls className="bg-card/80 border-border fill-muted-foreground shadow-lg rounded-md overflow-hidden backdrop-blur-md" showInteractive={false} />
               </ReactFlow>
             </ReactFlowProvider>
           </div>
 
           {/* Right Settings Panel */}
           {selectedNode && (
-            <div className="w-72 bg-[#1A1D24]/95 backdrop-blur-xl border-l border-white/10 shadow-2xl z-20 flex flex-col animate-in slide-in-from-right-8">
-              <div className="p-4 border-b border-white/5 flex items-center justify-between bg-black/20">
+            <div className="w-72 bg-card/95 backdrop-blur-xl border-l border-border shadow-2xl z-20 flex flex-col animate-in slide-in-from-right-8">
+              <div className="p-4 border-b border-border/50 flex items-center justify-between bg-accent/10">
                 <div>
-                  <h2 className="text-[11px] font-mono text-slate-200 uppercase tracking-widest">Node Settings</h2>
-                  <p className="text-[9px] text-slate-500 font-mono uppercase tracking-widest mt-1">{selectedNode.data.type} Configuration</p>
+                  <h2 className="text-[11px] font-mono text-foreground uppercase tracking-widest">Node Settings</h2>
+                  <p className="text-[9px] text-muted-foreground font-mono uppercase tracking-widest mt-1">{selectedNode.data.type} Configuration</p>
                 </div>
-                <button onClick={() => setSelectedNode(null)} className="p-1.5 hover:bg-white/10 rounded-md text-slate-400 transition-colors">
+                <button onClick={() => setSelectedNode(null)} className="p-1.5 hover:bg-accent/10 rounded-md text-muted-foreground transition-colors">
                   <ArrowLeft className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -429,12 +438,12 @@ export default function Builder() {
                 {selectedNode.data.type === 'message' && (
                   <div className="space-y-4">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Message Text</label>
+                      <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Message Text</label>
                       <textarea 
                         value={selectedNode.data.text as string} 
                         onChange={(e) => updateNodeData('text', e.target.value)}
                         placeholder="Type your message here..."
-                        className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50 transition-all text-xs min-h-[120px] resize-none font-mono"
+                        className="w-full bg-accent/5 border border-border rounded-md px-3 py-2 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-orange-500/50 transition-all text-xs min-h-[120px] resize-none font-mono"
                       />
                     </div>
                   </div>
@@ -443,14 +452,14 @@ export default function Builder() {
                 {selectedNode.data.type === 'input' && (
                   <div className="space-y-4">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Variable Name</label>
+                      <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Variable Name</label>
                       <input 
                         value={selectedNode.data.variable as string || ''} 
                         onChange={(e) => updateNodeData('variable', e.target.value)}
                         placeholder="e.g., user_name"
-                        className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50 transition-all text-xs font-mono"
+                        className="w-full bg-accent/5 border border-border rounded-md px-3 py-2 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-orange-500/50 transition-all text-xs font-mono"
                       />
-                      <p className="text-[9px] text-slate-500 font-mono uppercase mt-1">Stored variable name.</p>
+                      <p className="text-[9px] text-muted-foreground font-mono uppercase mt-1">Stored variable name.</p>
                     </div>
                   </div>
                 )}
@@ -458,34 +467,34 @@ export default function Builder() {
                 {selectedNode.data.type === 'condition' && (
                   <div className="space-y-4">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Variable to Check</label>
+                      <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Variable to Check</label>
                       <input 
                         value={selectedNode.data.variable as string || ''} 
                         onChange={(e) => updateNodeData('variable', e.target.value)}
                         placeholder="e.g., user_age"
-                        className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50 transition-all text-xs font-mono"
+                        className="w-full bg-accent/5 border border-border rounded-md px-3 py-2 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-orange-500/50 transition-all text-xs font-mono"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Operator</label>
+                      <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Operator</label>
                       <select 
                         value={selectedNode.data.operator as string || 'equals'} 
                         onChange={(e) => updateNodeData('operator', e.target.value)}
-                        className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-slate-200 focus:outline-none focus:border-orange-500/50 transition-all text-xs font-mono appearance-none"
+                        className="w-full bg-accent/5 border border-border rounded-md px-3 py-2 text-foreground focus:outline-none focus:border-orange-500/50 transition-all text-xs font-mono appearance-none"
                       >
-                        <option value="equals" className="bg-[#1A1D24]">Equals</option>
-                        <option value="contains" className="bg-[#1A1D24]">Contains</option>
-                        <option value="greater_than" className="bg-[#1A1D24]">Greater Than</option>
-                        <option value="less_than" className="bg-[#1A1D24]">Less Than</option>
+                        <option value="equals" className="bg-card">Equals</option>
+                        <option value="contains" className="bg-card">Contains</option>
+                        <option value="greater_than" className="bg-card">Greater Than</option>
+                        <option value="less_than" className="bg-card">Less Than</option>
                       </select>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Value</label>
+                      <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Value</label>
                       <input 
                         value={selectedNode.data.value as string || ''} 
                         onChange={(e) => updateNodeData('value', e.target.value)}
                         placeholder="e.g., 18"
-                        className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50 transition-all text-xs font-mono"
+                        className="w-full bg-accent/5 border border-border rounded-md px-3 py-2 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-orange-500/50 transition-all text-xs font-mono"
                       />
                     </div>
                   </div>
@@ -494,23 +503,23 @@ export default function Builder() {
                 {selectedNode.data.type === 'api' && (
                   <div className="space-y-4">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Method</label>
+                      <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Method</label>
                       <select 
                         value={selectedNode.data.method as string || 'GET'} 
                         onChange={(e) => updateNodeData('method', e.target.value)}
-                        className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-slate-200 focus:outline-none focus:border-orange-500/50 transition-all text-xs font-mono appearance-none"
+                        className="w-full bg-accent/5 border border-border rounded-md px-3 py-2 text-foreground focus:outline-none focus:border-orange-500/50 transition-all text-xs font-mono appearance-none"
                       >
-                        <option value="GET" className="bg-[#1A1D24]">GET</option>
-                        <option value="POST" className="bg-[#1A1D24]">POST</option>
+                        <option value="GET" className="bg-card">GET</option>
+                        <option value="POST" className="bg-card">POST</option>
                       </select>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">URL</label>
+                      <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">URL</label>
                       <input 
                         value={selectedNode.data.url as string || ''} 
                         onChange={(e) => updateNodeData('url', e.target.value)}
                         placeholder="https://api.example.com/data"
-                        className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50 transition-all text-xs font-mono"
+                        className="w-full bg-accent/5 border border-border rounded-md px-3 py-2 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-orange-500/50 transition-all text-xs font-mono"
                       />
                     </div>
                   </div>
@@ -519,14 +528,14 @@ export default function Builder() {
                 {selectedNode.data.type === 'delay' && (
                   <div className="space-y-4">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Delay (seconds)</label>
+                      <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Delay (seconds)</label>
                       <input 
                         type="number"
                         value={selectedNode.data.time as string || '3'} 
                         onChange={(e) => updateNodeData('time', e.target.value)}
                         min="1"
                         max="60"
-                        className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50 transition-all text-xs font-mono"
+                        className="w-full bg-accent/5 border border-border rounded-md px-3 py-2 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-orange-500/50 transition-all text-xs font-mono"
                       />
                     </div>
                   </div>
@@ -535,12 +544,12 @@ export default function Builder() {
                 {selectedNode.data.type === 'image' && (
                   <div className="space-y-4">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Image URL</label>
+                      <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Image URL</label>
                       <input 
                         value={selectedNode.data.url as string || ''} 
                         onChange={(e) => updateNodeData('url', e.target.value)}
                         placeholder="https://example.com/image.png"
-                        className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50 transition-all text-xs font-mono"
+                        className="w-full bg-accent/5 border border-border rounded-md px-3 py-2 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-orange-500/50 transition-all text-xs font-mono"
                       />
                     </div>
                   </div>
@@ -549,14 +558,14 @@ export default function Builder() {
                 {selectedNode.data.type === 'ai' && (
                   <div className="space-y-4">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">AI Prompt</label>
+                      <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">AI Prompt</label>
                       <textarea 
                         value={selectedNode.data.prompt as string || ''} 
                         onChange={(e) => updateNodeData('prompt', e.target.value)}
                         placeholder="e.g., Generate a helpful response based on the user's name: {{name}}"
-                        className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50 transition-all text-xs min-h-[120px] resize-none font-mono"
+                        className="w-full bg-accent/5 border border-border rounded-md px-3 py-2 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-orange-500/50 transition-all text-xs min-h-[120px] resize-none font-mono"
                       />
-                      <p className="text-[9px] text-slate-500 font-mono uppercase mt-1">Use {"{{variable}}"} to inject stored data.</p>
+                      <p className="text-[9px] text-muted-foreground font-mono uppercase mt-1">Use {"{{variable}}"} to inject stored data.</p>
                     </div>
                   </div>
                 )}
@@ -578,33 +587,33 @@ export default function Builder() {
       {/* Publish Success Modal */}
       {showPublishModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#1A1D24] border border-white/10 rounded-2xl p-8 w-full max-w-md shadow-2xl relative">
+          <div className="bg-card border border-border rounded-2xl p-8 w-full max-w-md shadow-2xl relative">
             <button 
               onClick={() => setShowPublishModal(false)}
-              className="absolute top-4 right-4 p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+              className="absolute top-4 right-4 p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
             <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
               <Check className="w-8 h-8 text-green-500" />
             </div>
-            <h2 className="text-xl font-medium text-white mb-2 text-center">Agent Published!</h2>
-            <p className="text-slate-400 mb-6 font-light text-center">Your agent is now live and ready to interact with users.</p>
+            <h2 className="text-xl font-medium text-foreground mb-2 text-center">Agent Published!</h2>
+            <p className="text-muted-foreground mb-6 font-light text-center">Your agent is now live and ready to interact with users.</p>
             
             <div className="space-y-2 mb-6">
-              <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Public URL</label>
+              <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Public URL</label>
               <div className="flex gap-2">
                 <input 
                   readOnly
                   value={`${window.location.origin}/bot/${botId}`}
-                  className="flex-1 bg-black/40 border border-white/10 rounded-md px-3 py-2 text-slate-200 text-xs font-mono"
+                  className="flex-1 bg-accent/5 border border-border rounded-md px-3 py-2 text-foreground text-xs font-mono"
                 />
                 <button 
                   onClick={() => {
                     navigator.clipboard.writeText(`${window.location.origin}/bot/${botId}`);
                     // alert('Copied to clipboard');
                   }}
-                  className="px-3 py-2 bg-white/5 border border-white/10 rounded-md text-slate-300 hover:bg-white/10 transition-colors text-xs font-mono"
+                  className="px-3 py-2 bg-accent/5 border border-border rounded-md text-muted-foreground hover:bg-accent/10 transition-colors text-xs font-mono"
                 >
                   Copy
                 </button>

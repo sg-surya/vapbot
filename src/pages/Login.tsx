@@ -32,11 +32,11 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#0B0F19] text-white font-sans overflow-hidden relative">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground font-sans overflow-hidden relative">
       {/* Cinematic Background Layers */}
       <div className="absolute inset-0 pointer-events-none">
         {/* Base Grid */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-[0.2]"></div>
         
         {/* Noise Texture */}
         <div className="absolute inset-0 opacity-[0.04] mix-blend-screen" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}></div>
@@ -51,18 +51,18 @@ export default function Login() {
       <div className="w-full max-w-md relative z-10 px-6">
         <div className="text-center mb-8">
           <Link to="/" className="inline-block">
-            <span className="font-bold text-3xl tracking-tight text-orange-500 lowercase">
+            <span className="font-bold text-3xl tracking-tight text-orange-500 lowercase font-logo">
               vapbot<span className="text-orange-500">.</span>
             </span>
           </Link>
-          <h1 className="text-2xl font-medium mt-6 text-slate-200">Welcome back</h1>
-          <p className="text-slate-400 mt-2 font-light">Enter your credentials to access your account</p>
+          <h1 className="text-2xl font-medium mt-6 text-foreground">Welcome back</h1>
+          <p className="text-muted-foreground mt-2 font-light">Enter your credentials to access your account</p>
         </div>
 
-        <div className="relative p-[1px] rounded-2xl bg-gradient-to-b from-white/20 to-white/5 shadow-[0_16px_40px_rgba(0,0,0,0.6)] group">
-          <div className="absolute inset-0 rounded-2xl bg-[#1A1D24]/80 backdrop-blur-2xl"></div>
+        <div className="relative p-[1px] rounded-2xl bg-gradient-to-b from-foreground/20 to-foreground/5 shadow-[0_16px_40px_rgba(0,0,0,0.2)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.6)] group">
+          <div className="absolute inset-0 rounded-2xl bg-background/80 backdrop-blur-2xl"></div>
           
-          <div className="relative p-8 rounded-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] bg-white/[0.02]">
+          <div className="relative p-8 rounded-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] bg-accent/5">
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
                 <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
@@ -71,7 +71,7 @@ export default function Login() {
               )}
               
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-slate-300 ml-1">Email</label>
+                <label htmlFor="email" className="text-sm font-medium text-muted-foreground ml-1">Email</label>
                 <input 
                   id="email" 
                   type="email" 
@@ -79,13 +79,13 @@ export default function Login() {
                   onChange={(e) => setEmail(e.target.value)} 
                   required 
                   placeholder="name@example.com"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition-all font-light"
+                  className="w-full bg-accent/5 border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition-all font-light"
                 />
               </div>
               
               <div className="space-y-2">
                 <div className="flex items-center justify-between ml-1">
-                  <label htmlFor="password" className="text-sm font-medium text-slate-300">Password</label>
+                  <label htmlFor="password" className="text-sm font-medium text-muted-foreground">Password</label>
                   <a href="#" className="text-xs text-orange-500 hover:text-orange-400 transition-colors">Forgot password?</a>
                 </div>
                 <input 
@@ -95,7 +95,7 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)} 
                   required 
                   placeholder="••••••••"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition-all font-light"
+                  className="w-full bg-accent/5 border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition-all font-light"
                 />
               </div>
 
@@ -111,7 +111,7 @@ export default function Login() {
           </div>
         </div>
 
-        <div className="text-center mt-8 text-slate-400 text-sm font-light">
+        <div className="text-center mt-8 text-muted-foreground text-sm font-light">
           Don't have an account?{' '}
           <Link to="/signup" className="text-orange-500 hover:text-orange-400 font-medium transition-colors">
             Sign up
