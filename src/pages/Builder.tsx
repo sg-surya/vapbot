@@ -18,7 +18,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { ArrowLeft, Save, Play, MessageSquare, Type, GitBranch, Globe, Clock, Image as ImageIcon, Plus, MoreHorizontal, Check } from 'lucide-react';
+import { ArrowLeft, Save, Play, MessageSquare, Type, GitBranch, Globe, Clock, Image as ImageIcon, Plus, MoreHorizontal, Check, Trash2, Bot, X } from 'lucide-react';
 import ChatPreview from '../components/ChatPreview';
 
 // Custom Node Design based on the provided image
@@ -58,6 +58,11 @@ const CustomNode = ({ data, isConnectable }: any) => {
       headerColor = 'text-pink-400';
       previewText = data.url ? 'Image URL set' : 'No image';
       break;
+    case 'ai':
+      Icon = Bot;
+      headerColor = 'text-indigo-400';
+      previewText = data.prompt ? `Prompt: ${data.prompt}` : 'No prompt';
+      break;
   }
 
   return (
@@ -72,8 +77,14 @@ const CustomNode = ({ data, isConnectable }: any) => {
           </div>
           <span className="text-[10px] font-mono text-slate-300 uppercase tracking-widest">{data.label}</span>
         </div>
-        <button className="text-slate-500 hover:text-slate-300 transition-colors">
-          <MoreHorizontal className="w-4 h-4" />
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            data.onDelete(data.id);
+          }}
+          className="text-slate-500 hover:text-red-400 transition-colors"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
 
@@ -120,7 +131,10 @@ export default function Builder() {
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPublishing, setIsBotPublishing] = useState(false);
+  const [isPublished, setIsPublished] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
 
   useEffect(() => {
     const fetchFlow = async () => {
@@ -130,7 +144,23 @@ export default function Builder() {
         });
         if (res.ok) {
           const data = await res.json();
-          if (data.nodes) setNodes(data.nodes);
+          // Fetch bot details to get published state
+          const botRes = await fetch(`/api/bots`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (botRes.ok) {
+            const bots = await botRes.json();
+            const currentBot = bots.find((b: any) => b.id === parseInt(botId!));
+            if (currentBot) setIsPublished(!!currentBot.published);
+          }
+
+          if (data.nodes) {
+            const nodesWithDelete = data.nodes.map((n: any) => ({
+              ...n,
+              data: { ...n.data, onDelete: deleteNode }
+            }));
+            setNodes(nodesWithDelete);
+          }
           if (data.edges) setEdges(data.edges);
           
           if (data.nodes && data.nodes.length > 0) {
@@ -149,7 +179,7 @@ export default function Builder() {
   }, [botId, token, setNodes, setEdges]);
 
   const onConnect = useCallback(
-    (params: Connection | Edge) => setEdges((eds) => addEdge({ ...params, type: 'smoothstep', animated: true, style: { stroke: '#ff8a00', strokeWidth: 2 } }, eds)),
+    (params: Connection) => setEdges((eds) => addEdge({ ...params, type: 'smoothstep', animated: true }, eds)),
     [setEdges],
   );
 
@@ -161,6 +191,12 @@ export default function Builder() {
     setSelectedNode(null);
     setShowAddMenu(false);
   };
+
+  const deleteNode = useCallback((nodeId: string) => {
+    setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+    setEdges((eds) => eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
+    setSelectedNode(null);
+  }, [setNodes, setEdges]);
 
   const updateNodeData = (key: string, value: string) => {
     if (!selectedNode) return;
@@ -197,12 +233,34 @@ export default function Builder() {
         body: JSON.stringify({ nodes, edges })
       });
       if (!res.ok) throw new Error('Failed to save');
-      // alert('Saved successfully!');
     } catch (error) {
       console.error('Save error', error);
       alert('Failed to save flow');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    setIsBotPublishing(true);
+    try {
+      const res = await fetch(`/api/bots/${botId}/publish`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ published: !isPublished })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setIsPublished(data.published);
+        if (data.published) setShowPublishModal(true);
+      }
+    } catch (error) {
+      console.error('Publish error', error);
+    } finally {
+      setIsBotPublishing(false);
     }
   };
 
@@ -224,6 +282,7 @@ export default function Builder() {
       case 'api': label = 'API Request'; defaultData = { url: 'https://api.example.com', method: 'GET' }; break;
       case 'delay': label = 'Delay'; defaultData = { time: '3' }; break;
       case 'image': label = 'Image'; defaultData = { url: '' }; break;
+      case 'ai': label = 'AI Response'; defaultData = { prompt: 'Summarize the conversation so far.' }; break;
     }
 
     const newNode: Node = {
@@ -231,8 +290,10 @@ export default function Builder() {
       type: 'custom',
       position,
       data: { 
+        id: getId(), // We need the ID in data for deletion
         label,
         type,
+        onDelete: deleteNode,
         ...defaultData
       },
     };
@@ -287,8 +348,16 @@ export default function Builder() {
               <Play className="w-3.5 h-3.5" />
               Test
             </button>
-            <button className="px-4 py-1.5 bg-gradient-to-r from-[#ff8a00] to-[#e52e71] text-white font-mono uppercase tracking-wider rounded-md hover:shadow-[0_0_15px_rgba(255,138,0,0.4)] transition-all text-xs">
-              Publish
+            <button 
+              onClick={handlePublish}
+              disabled={isPublishing}
+              className={`px-4 py-1.5 font-mono uppercase tracking-wider rounded-md transition-all text-xs ${
+                isPublished 
+                  ? 'bg-green-500/20 text-green-400 border border-green-500/20 hover:bg-green-500/30' 
+                  : 'bg-gradient-to-r from-[#ff8a00] to-[#e52e71] text-white hover:shadow-[0_0_15px_rgba(255,138,0,0.4)]'
+              }`}
+            >
+              {isPublishing ? '...' : isPublished ? 'Published' : 'Publish'}
             </button>
           </div>
         </header>
@@ -332,6 +401,7 @@ export default function Builder() {
                         <button onClick={() => addNode('api')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><Globe className="w-3.5 h-3.5 text-green-400" /> API Request</button>
                         <button onClick={() => addNode('delay')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><Clock className="w-3.5 h-3.5 text-yellow-400" /> Delay</button>
                         <button onClick={() => addNode('image')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><ImageIcon className="w-3.5 h-3.5 text-pink-400" /> Image</button>
+                        <button onClick={() => addNode('ai')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><Bot className="w-3.5 h-3.5 text-indigo-400" /> AI Response</button>
                       </div>
                     )}
                   </div>
@@ -475,6 +545,21 @@ export default function Builder() {
                     </div>
                   </div>
                 )}
+                
+                {selectedNode.data.type === 'ai' && (
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">AI Prompt</label>
+                      <textarea 
+                        value={selectedNode.data.prompt as string || ''} 
+                        onChange={(e) => updateNodeData('prompt', e.target.value)}
+                        placeholder="e.g., Generate a helpful response based on the user's name: {{name}}"
+                        className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50 transition-all text-xs min-h-[120px] resize-none font-mono"
+                      />
+                      <p className="text-[9px] text-slate-500 font-mono uppercase mt-1">Use {"{{variable}}"} to inject stored data.</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -488,6 +573,52 @@ export default function Builder() {
           edges={edges} 
           onClose={() => setIsChatOpen(false)} 
         />
+      )}
+
+      {/* Publish Success Modal */}
+      {showPublishModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#1A1D24] border border-white/10 rounded-2xl p-8 w-full max-w-md shadow-2xl relative">
+            <button 
+              onClick={() => setShowPublishModal(false)}
+              className="absolute top-4 right-4 p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Check className="w-8 h-8 text-green-500" />
+            </div>
+            <h2 className="text-xl font-medium text-white mb-2 text-center">Agent Published!</h2>
+            <p className="text-slate-400 mb-6 font-light text-center">Your agent is now live and ready to interact with users.</p>
+            
+            <div className="space-y-2 mb-6">
+              <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Public URL</label>
+              <div className="flex gap-2">
+                <input 
+                  readOnly
+                  value={`${window.location.origin}/bot/${botId}`}
+                  className="flex-1 bg-black/40 border border-white/10 rounded-md px-3 py-2 text-slate-200 text-xs font-mono"
+                />
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/bot/${botId}`);
+                    // alert('Copied to clipboard');
+                  }}
+                  className="px-3 py-2 bg-white/5 border border-white/10 rounded-md text-slate-300 hover:bg-white/10 transition-colors text-xs font-mono"
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowPublishModal(false)}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-[#ff8a00] to-[#e52e71] text-white font-medium shadow-[0_0_15px_rgba(255,138,0,0.3)] hover:shadow-[0_0_25px_rgba(255,138,0,0.5)] transition-all"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

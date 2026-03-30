@@ -1,5 +1,5 @@
 {
-  "name": "AI Bot Builder",
-  "description": "A no-code AI chatbot builder platform with a visual flow editor.",
+  "name": "VapBot AI Builder",
+  "description": "A no-code AI chatbot builder platform with a visual flow editor, supporting AI responses, user inputs, conditions, and API integrations.",
   "requestFramePermissions": []
 }

@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Builder from './pages/Builder';
+import PublishedBot from './pages/PublishedBot';
 import { useAuthStore } from './store/authStore';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -42,6 +43,7 @@ export default function App() {
             </ProtectedRoute>
           } 
         />
+        <Route path="/bot/:botId" element={<PublishedBot />} />
       </Routes>
     </BrowserRouter>
   );

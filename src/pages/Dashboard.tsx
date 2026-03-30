@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { Plus, Trash2, Bot, LogOut, LayoutTemplate, BarChart2, Settings, PanelLeftClose, PanelLeftOpen, MonitorSmartphone, MessageCircle, MessageSquare, Code, ArrowLeft, X } from 'lucide-react';
+import { Plus, Trash2, Bot, LogOut, LayoutTemplate, BarChart2, Settings, PanelLeftClose, PanelLeftOpen, MonitorSmartphone, MessageCircle, MessageSquare, Code, ArrowLeft, X, ChevronRight, ExternalLink, Layout } from 'lucide-react';
 
 interface BotData {
   id: number;
   name: string;
+  description?: string;
+  published?: number;
   createdAt: string;
 }
 
@@ -24,8 +26,13 @@ export default function Dashboard() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   
   const [botToDelete, setBotToDelete] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState('my-agents');
+  const [publicBots, setPublicBots] = useState<BotData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingPublic, setIsLoadingPublic] = useState(false);
 
   const fetchBots = async () => {
+    setIsLoading(true);
     try {
       const res = await fetch('/api/bots', {
         headers: { Authorization: `Bearer ${token}` }
@@ -36,12 +43,37 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error('Failed to fetch bots', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchPublicBots = async () => {
+    setIsLoadingPublic(true);
+    try {
+      const res = await fetch('/api/public/bots');
+      if (res.ok) {
+        const data = await res.json();
+        setPublicBots(data);
+      }
+    } catch (error) {
+      console.error('Fetch public bots error', error);
+    } finally {
+      setIsLoadingPublic(false);
     }
   };
 
   useEffect(() => {
-    fetchBots();
-  }, []);
+    if (token) {
+      fetchBots();
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (activeTab === 'templates') {
+      fetchPublicBots();
+    }
+  }, [activeTab]);
 
   const openCreateModal = () => {
     setNewBotName('');
@@ -50,7 +82,7 @@ export default function Dashboard() {
     setIsCreateModalOpen(true);
   };
 
-  const submitCreateBot = async (e: React.FormEvent) => {
+  const submitCreateBot = async (e: FormEvent) => {
     e.preventDefault();
     if (!newBotName.trim()) return;
     
@@ -115,22 +147,30 @@ export default function Dashboard() {
           </div>
           
           <nav className="space-y-2">
-            <a href="#" className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3 px-4'} py-3 rounded-xl bg-white/10 text-white font-medium transition-colors border border-white/5`} title="My Agents">
-              <Bot className="w-5 h-5 text-orange-400 flex-shrink-0" />
+            <button 
+              onClick={() => setActiveTab('my-agents')}
+              className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3 px-4'} py-3 rounded-xl ${activeTab === 'my-agents' ? 'bg-white/10 text-white border border-white/5' : 'hover:bg-white/5 text-slate-400 hover:text-white'} font-medium transition-colors`} 
+              title="My Agents"
+            >
+              <Bot className={`w-5 h-5 ${activeTab === 'my-agents' ? 'text-orange-400' : ''} flex-shrink-0`} />
               {!isSidebarCollapsed && <span className="whitespace-nowrap">My Agents</span>}
-            </a>
-            <a href="#" className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3 px-4'} py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors`} title="Templates">
-              <LayoutTemplate className="w-5 h-5 flex-shrink-0" />
-              {!isSidebarCollapsed && <span className="whitespace-nowrap">Templates</span>}
-            </a>
-            <a href="#" className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3 px-4'} py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors`} title="Analytics">
+            </button>
+            <button 
+              onClick={() => setActiveTab('templates')}
+              className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3 px-4'} py-3 rounded-xl ${activeTab === 'templates' ? 'bg-white/10 text-white border border-white/5' : 'hover:bg-white/5 text-slate-400 hover:text-white'} font-medium transition-colors`} 
+              title="Public Flows"
+            >
+              <LayoutTemplate className={`w-5 h-5 ${activeTab === 'templates' ? 'text-orange-400' : ''} flex-shrink-0`} />
+              {!isSidebarCollapsed && <span className="whitespace-nowrap">Public Flows</span>}
+            </button>
+            <button className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3 px-4'} py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors`} title="Analytics">
               <BarChart2 className="w-5 h-5 flex-shrink-0" />
               {!isSidebarCollapsed && <span className="whitespace-nowrap">Analytics</span>}
-            </a>
-            <a href="#" className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3 px-4'} py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors`} title="Settings">
+            </button>
+            <button className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3 px-4'} py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors`} title="Settings">
               <Settings className="w-5 h-5 flex-shrink-0" />
               {!isSidebarCollapsed && <span className="whitespace-nowrap">Settings</span>}
-            </a>
+            </button>
           </nav>
         </div>
 
@@ -195,71 +235,167 @@ export default function Dashboard() {
         <div className="w-full px-8 py-10">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-12 gap-4">
             <div>
-              <h1 className="text-3xl font-medium text-slate-200">My Agents</h1>
-              <p className="text-slate-400 mt-2 font-light">Manage and create your AI agents</p>
+              <h1 className="text-3xl font-medium text-slate-200">
+                {activeTab === 'my-agents' ? 'My Agents' : 'Public Flows'}
+              </h1>
+              <p className="text-slate-400 mt-2 font-light">
+                {activeTab === 'my-agents' 
+                  ? 'Manage and create your AI agents' 
+                  : 'Explore and use public conversation flows from the community'}
+              </p>
             </div>
-            <button 
-              onClick={openCreateModal}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#ff8a00] to-[#e52e71] text-white font-medium flex items-center gap-2 shadow-[0_0_20px_rgba(255,138,0,0.3)] hover:shadow-[0_0_30px_rgba(255,138,0,0.5)] hover:scale-[1.02] transition-all duration-300"
-            >
-              <Plus className="w-5 h-5" />
-              Build an Agent
-            </button>
+            {activeTab === 'my-agents' && (
+              <button 
+                onClick={openCreateModal}
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#ff8a00] to-[#e52e71] text-white font-medium flex items-center gap-2 shadow-[0_0_20px_rgba(255,138,0,0.3)] hover:shadow-[0_0_30px_rgba(255,138,0,0.5)] hover:scale-[1.02] transition-all duration-300"
+              >
+                <Plus className="w-5 h-5" />
+                Build an Agent
+              </button>
+            )}
           </div>
 
-          {bots.length === 0 ? (
-            <div className="relative p-[1px] rounded-2xl bg-gradient-to-b from-white/10 to-transparent max-w-2xl mx-auto mt-20">
-              <div className="absolute inset-0 rounded-2xl bg-[#1A1D24]/80 backdrop-blur-xl"></div>
-              <div className="relative p-12 rounded-2xl text-center flex flex-col items-center">
-                <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6">
-                  <Bot className="w-10 h-10 text-slate-400" />
-                </div>
-                <h3 className="text-xl font-medium text-slate-200 mb-2">No agents yet</h3>
-                <p className="text-slate-400 font-light mb-8">Build your first agent to start automating your conversations.</p>
-                <button 
-                  onClick={openCreateModal}
-                  className="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-white font-medium transition-all"
-                >
-                  Build your first agent
-                </button>
+          {activeTab === 'my-agents' ? (
+            isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-64 bg-white/5 border border-white/10 rounded-2xl animate-pulse" />
+                ))}
               </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {bots.map((bot) => (
-                <div key={bot.id} className="relative p-[1px] rounded-2xl bg-gradient-to-b from-white/20 to-white/5 shadow-[0_8px_30px_rgba(0,0,0,0.4)] group hover:-translate-y-1 transition-transform duration-300">
-                  <div className="absolute inset-0 rounded-2xl bg-[#1A1D24]/90 backdrop-blur-xl"></div>
-                  <div className="relative p-6 rounded-2xl flex flex-col h-full">
-                    <div className="flex items-start justify-between mb-6">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500/20 to-pink-500/20 border border-orange-500/20 flex items-center justify-center">
-                        <Bot className="w-6 h-6 text-orange-400" />
+            ) : bots.length === 0 ? (
+              <div className="relative p-[1px] rounded-2xl bg-gradient-to-b from-white/10 to-transparent max-w-2xl mx-auto mt-20">
+                <div className="absolute inset-0 rounded-2xl bg-[#1A1D24]/80 backdrop-blur-xl"></div>
+                <div className="relative p-12 rounded-2xl text-center flex flex-col items-center">
+                  <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6">
+                    <Bot className="w-10 h-10 text-slate-400" />
+                  </div>
+                  <h3 className="text-xl font-medium text-slate-200 mb-2">No agents yet</h3>
+                  <p className="text-slate-400 font-light mb-8">Build your first agent to start automating your conversations.</p>
+                  <button 
+                    onClick={openCreateModal}
+                    className="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-white font-medium transition-all"
+                  >
+                    Build your first agent
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {bots.map((bot) => (
+                  <div key={bot.id} className="relative p-[1px] rounded-2xl bg-gradient-to-b from-white/20 to-white/5 shadow-[0_8px_30px_rgba(0,0,0,0.4)] group hover:-translate-y-1 transition-transform duration-300">
+                    <div className="absolute inset-0 rounded-2xl bg-[#1A1D24]/90 backdrop-blur-xl"></div>
+                    <div className="relative p-6 rounded-2xl flex flex-col h-full">
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500/20 to-pink-500/20 border border-orange-500/20 flex items-center justify-center">
+                          <Bot className="w-6 h-6 text-orange-400" />
+                        </div>
+                        <div className="flex gap-2">
+                          {bot.published === 1 && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigator.clipboard.writeText(`${window.location.origin}/bot/${bot.id}`);
+                              }}
+                              className="p-2 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-blue-400/10 transition-colors"
+                              title="Copy Public URL"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => confirmDeleteBot(bot.id)}
+                            className="p-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                            title="Delete Agent"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
-                      <button 
-                        onClick={() => confirmDeleteBot(bot.id)}
-                        className="p-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-colors"
-                        title="Delete Agent"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                    
-                    <h3 className="text-xl font-medium text-slate-200 mb-2">{bot.name}</h3>
-                    <p className="text-sm text-slate-500 font-light mb-8">
-                      Created {new Date(bot.createdAt).toLocaleDateString()}
-                    </p>
-                    
-                    <div className="mt-auto pt-6 border-t border-white/10">
-                      <button 
-                        onClick={() => navigate(`/builder/${bot.id}`)}
-                        className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium transition-all flex items-center justify-center gap-2"
-                      >
-                        Open Builder
-                      </button>
+                      
+                      <h3 className="text-xl font-medium text-slate-200 mb-2">{bot.name}</h3>
+                      <p className="text-sm text-slate-500 font-light mb-4 line-clamp-2">
+                        {bot.description || `Created ${new Date(bot.createdAt).toLocaleDateString()}`}
+                      </p>
+
+                      <div className="flex items-center gap-2 mb-6">
+                        <div className={`w-2 h-2 rounded-full ${bot.published ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-slate-600'}`} />
+                        <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
+                          {bot.published ? 'Published' : 'Draft'}
+                        </span>
+                      </div>
+                      
+                      <div className="mt-auto pt-6 border-t border-white/10">
+                        <button 
+                          onClick={() => navigate(`/builder/${bot.id}`)}
+                          className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium transition-all flex items-center justify-center gap-2 group/btn"
+                        >
+                          Open Builder
+                          <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                        </button>
+                      </div>
                     </div>
                   </div>
+                ))}
+              </div>
+            )
+          ) : (
+            isLoadingPublic ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-64 bg-white/5 border border-white/10 rounded-2xl animate-pulse" />
+                ))}
+              </div>
+            ) : publicBots.length === 0 ? (
+              <div className="relative p-[1px] rounded-2xl bg-gradient-to-b from-white/10 to-transparent max-w-2xl mx-auto mt-20">
+                <div className="absolute inset-0 rounded-2xl bg-[#1A1D24]/80 backdrop-blur-xl"></div>
+                <div className="relative p-12 rounded-2xl text-center flex flex-col items-center">
+                  <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6">
+                    <Layout className="w-10 h-10 text-slate-400" />
+                  </div>
+                  <h3 className="text-xl font-medium text-slate-200 mb-2">No public flows yet</h3>
+                  <p className="text-slate-400 font-light">Be the first to publish a flow to the community!</p>
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {publicBots.map((bot) => (
+                  <div key={bot.id} className="relative p-[1px] rounded-2xl bg-gradient-to-b from-white/20 to-white/5 shadow-[0_8px_30px_rgba(0,0,0,0.4)] group hover:-translate-y-1 transition-transform duration-300">
+                    <div className="absolute inset-0 rounded-2xl bg-[#1A1D24]/90 backdrop-blur-xl"></div>
+                    <div className="relative p-6 rounded-2xl flex flex-col h-full">
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/20 flex items-center justify-center">
+                          <Layout className="w-6 h-6 text-blue-400" />
+                        </div>
+                        <Link 
+                          to={`/bot/${bot.id}`}
+                          target="_blank"
+                          className="p-2 rounded-lg text-slate-500 hover:text-white hover:bg-white/10 transition-colors"
+                          title="View Bot"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </Link>
+                      </div>
+                      
+                      <h3 className="text-xl font-medium text-slate-200 mb-2">{bot.name}</h3>
+                      <p className="text-sm text-slate-500 font-light mb-8 line-clamp-2">
+                        {bot.description || 'A public conversation flow shared by the community.'}
+                      </p>
+                      
+                      <div className="mt-auto pt-6 border-t border-white/10">
+                        <Link 
+                          to={`/bot/${bot.id}`}
+                          target="_blank"
+                          className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium transition-all flex items-center justify-center gap-2 group/btn"
+                        >
+                          Try it out
+                          <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
           )}
         </div>
       </main>

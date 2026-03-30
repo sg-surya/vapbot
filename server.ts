@@ -24,6 +24,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     userId INTEGER,
     name TEXT,
+    published INTEGER DEFAULT 0,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(userId) REFERENCES users(id)
   );
@@ -45,7 +46,9 @@ const getUserById = db.prepare('SELECT id, email FROM users WHERE id = ?');
 const insertBot = db.prepare('INSERT INTO bots (userId, name) VALUES (?, ?)');
 const getBotsByUser = db.prepare('SELECT * FROM bots WHERE userId = ? ORDER BY createdAt DESC');
 const getBotById = db.prepare('SELECT * FROM bots WHERE id = ? AND userId = ?');
+const getBotByIdPublic = db.prepare('SELECT * FROM bots WHERE id = ? AND published = 1');
 const deleteBot = db.prepare('DELETE FROM bots WHERE id = ? AND userId = ?');
+const togglePublishBot = db.prepare('UPDATE bots SET published = ? WHERE id = ? AND userId = ?');
 
 const insertOrUpdateFlow = db.prepare(`
   INSERT INTO flows (botId, flowData, updatedAt) 
@@ -143,6 +146,24 @@ async function startServer() {
     const result = deleteBot.run(req.params.id, req.user.id);
     if (result.changes === 0) return res.status(404).json({ error: 'Bot not found or unauthorized' });
     res.json({ success: true });
+  });
+
+  app.post('/api/bots/:id/publish', authenticateToken, (req: any, res) => {
+    const { published } = req.body;
+    const result = togglePublishBot.run(published ? 1 : 0, req.params.id, req.user.id);
+    if (result.changes === 0) return res.status(404).json({ error: 'Bot not found or unauthorized' });
+    res.json({ success: true, published: !!published });
+  });
+
+  // Public Flow Access
+  app.get('/api/public/flows/:botId', (req: any, res) => {
+    const bot = getBotByIdPublic.get(req.params.botId);
+    if (!bot) return res.status(404).json({ error: 'Bot not found or not published' });
+
+    const flow = getFlowByBotId.get(req.params.botId) as any;
+    if (!flow) return res.json({ nodes: [], edges: [] });
+    
+    res.json(JSON.parse(flow.flowData));
   });
 
   // Flows

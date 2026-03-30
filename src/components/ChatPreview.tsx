@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Node, Edge } from '@xyflow/react';
-import { X, Send, Bot, User } from 'lucide-react';
+import { X, Send, Bot, User, Loader2 } from 'lucide-react';
+import { GoogleGenAI } from "@google/genai";
 
 interface ChatPreviewProps {
   nodes: Node[];
@@ -12,15 +13,18 @@ interface Message {
   id: string;
   sender: 'bot' | 'user';
   text: string;
+  type?: 'text' | 'image';
+  url?: string;
 }
 
 export default function ChatPreview({ nodes, edges, onClose }: ChatPreviewProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
-  const [variables, setVariables] = useState<Record<string, string>>({});
-  const variablesRef = useRef<Record<string, string>>({});
+  const [variables, setVariables] = useState<Record<string, any>>({});
+  const variablesRef = useRef<Record<string, any>>({});
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
+  const [isBotThinking, setIsBotThinking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Initialize chat
@@ -35,12 +39,10 @@ export default function ChatPreview({ nodes, edges, onClose }: ChatPreviewProps)
     const startNodes = nodes.filter(n => !incomingEdges.has(n.id));
     
     if (startNodes.length === 0) {
-      // Fallback to first node if there's a cycle or something
       executeNode(nodes[0].id);
       return;
     }
 
-    // Start execution
     executeNode(startNodes[0].id);
   }, []);
 
@@ -49,44 +51,119 @@ export default function ChatPreview({ nodes, edges, onClose }: ChatPreviewProps)
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const addMessage = (sender: 'bot' | 'user', text: string) => {
-    setMessages(prev => [...prev, { id: Math.random().toString(), sender, text }]);
+  const addMessage = (sender: 'bot' | 'user', text: string, type: 'text' | 'image' = 'text', url?: string) => {
+    setMessages(prev => [...prev, { id: Math.random().toString(), sender, text, type, url }]);
+  };
+
+  const replaceVariables = (text: string) => {
+    let result = text || '';
+    const currentVars = variablesRef.current;
+    Object.keys(currentVars).forEach(key => {
+      const val = typeof currentVars[key] === 'object' ? JSON.stringify(currentVars[key]) : currentVars[key];
+      result = result.replace(new RegExp(`{{${key}}}`, 'g'), val);
+    });
+    return result;
   };
 
   const executeNode = async (nodeId: string) => {
     const node = nodes.find(n => n.id === nodeId);
     if (!node) {
-      addMessage('bot', 'Flow ended unexpectedly.');
+      addMessage('bot', 'Flow ended.');
       return;
     }
 
     setCurrentNodeId(nodeId);
+    setIsBotThinking(true);
 
-    if (node.data.type === 'message') {
-      // Replace variables in text
-      let text = (node.data.text as string) || '';
-      const currentVars = variablesRef.current;
-      Object.keys(currentVars).forEach(key => {
-        text = text.replace(new RegExp(`{{${key}}}`, 'g'), currentVars[key]);
-      });
-      
-      addMessage('bot', text);
-      
-      // Move to next node automatically after a short delay
-      setTimeout(() => {
+    const nodeType = node.data.type;
+
+    try {
+      if (nodeType === 'message') {
+        const text = replaceVariables((node.data.text as string) || '');
+        addMessage('bot', text);
+        setTimeout(() => moveToNextNode(nodeId), 800);
+      } 
+      else if (nodeType === 'image') {
+        const url = replaceVariables((node.data.url as string) || '');
+        addMessage('bot', 'Sending image...', 'image', url);
+        setTimeout(() => moveToNextNode(nodeId), 800);
+      }
+      else if (nodeType === 'input') {
+        setIsBotThinking(false);
+        setIsWaitingForInput(true);
+      } 
+      else if (nodeType === 'delay') {
+        const seconds = parseInt(node.data.time as string) || 1;
+        setTimeout(() => moveToNextNode(nodeId), seconds * 1000);
+      }
+      else if (nodeType === 'condition') {
+        const variable = node.data.variable as string;
+        const operator = node.data.operator as string;
+        const value = node.data.value as string;
+        const currentVal = variablesRef.current[variable];
+
+        let result = false;
+        if (operator === 'equals') result = String(currentVal) === String(value);
+        else if (operator === 'contains') result = String(currentVal).includes(String(value));
+        else if (operator === 'greater_than') result = Number(currentVal) > Number(value);
+        else if (operator === 'less_than') result = Number(currentVal) < Number(value);
+
+        const edgeId = result ? 'true' : 'false';
+        const nextEdge = edges.find(e => e.source === nodeId && e.sourceHandle === edgeId);
+        
+        if (nextEdge) {
+          executeNode(nextEdge.target);
+        } else {
+          moveToNextNode(nodeId);
+        }
+      }
+      else if (nodeType === 'api') {
+        const url = replaceVariables((node.data.url as string) || '');
+        const method = (node.data.method as string) || 'GET';
+        
+        try {
+          const res = await fetch(url, { method });
+          const data = await res.json();
+          const varName = `api_${nodeId.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          variablesRef.current[varName] = data;
+          setVariables({ ...variablesRef.current });
+        } catch (e) {
+          console.error('API Node error', e);
+        }
         moveToNextNode(nodeId);
-      }, 500);
-    } else if (node.data.type === 'input') {
-      setIsWaitingForInput(true);
+      }
+      else if (nodeType === 'ai') {
+        const prompt = replaceVariables((node.data.prompt as string) || '');
+        
+        const history = messages.map(m => `${m.sender === 'bot' ? 'Assistant' : 'User'}: ${m.text}`).join('\n');
+        const fullPrompt = `Conversation history:\n${history}\n\nInstructions: ${prompt}\n\nAssistant:`;
+
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+        const response = await ai.models.generateContent({
+          model: "gemini-3-flash-preview",
+          contents: fullPrompt,
+        });
+
+        const aiText = response.text || "I'm sorry, I couldn't generate a response.";
+        addMessage('bot', aiText);
+        setTimeout(() => moveToNextNode(nodeId), 800);
+      }
+    } catch (error) {
+      console.error('Node execution error', error);
+      addMessage('bot', 'An error occurred during execution.');
+      setIsBotThinking(false);
     }
   };
 
   const moveToNextNode = (currentNodeId: string) => {
     const outgoingEdges = edges.filter(e => e.source === currentNodeId);
     if (outgoingEdges.length > 0) {
-      // For Phase 1, just take the first outgoing edge
+      const node = nodes.find(n => n.id === currentNodeId);
+      if (node?.data.type === 'condition') return;
+
       executeNode(outgoingEdges[0].target);
     } else {
+      setIsBotThinking(false);
       addMessage('bot', 'Flow completed.');
     }
   };
@@ -98,20 +175,16 @@ export default function ChatPreview({ nodes, edges, onClose }: ChatPreviewProps)
     const node = nodes.find(n => n.id === currentNodeId);
     if (!node || node.data.type !== 'input') return;
 
-    // Add user message
     addMessage('user', inputValue);
 
-    // Store variable
     const variableName = (node.data.variable as string) || 'input';
     const newVars = { ...variablesRef.current, [variableName]: inputValue };
     variablesRef.current = newVars;
     setVariables(newVars);
 
-    // Reset input state
     setInputValue('');
     setIsWaitingForInput(false);
 
-    // Move to next node
     setTimeout(() => {
       moveToNextNode(currentNodeId);
     }, 500);
@@ -147,16 +220,23 @@ export default function ChatPreview({ nodes, edges, onClose }: ChatPreviewProps)
             }`}>
               {msg.sender === 'user' ? <User className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
             </div>
-            <div className={`max-w-[75%] rounded-md px-3 py-2 text-xs font-mono leading-relaxed ${
+            <div className={`max-w-[85%] rounded-md px-3 py-2 text-xs font-mono leading-relaxed ${
               msg.sender === 'user' 
                 ? 'bg-gradient-to-r from-[#ff8a00] to-[#e52e71] text-white shadow-[0_4px_15px_rgba(255,138,0,0.2)]' 
                 : 'bg-black/40 border border-white/10 text-slate-200'
             }`}>
-              {msg.text}
+              {msg.type === 'image' ? (
+                <div className="space-y-2">
+                  <img src={msg.url} alt="Bot content" className="rounded-md max-w-full h-auto border border-white/5" referrerPolicy="no-referrer" />
+                  <p>{msg.text}</p>
+                </div>
+              ) : (
+                msg.text
+              )}
             </div>
           </div>
         ))}
-        {isWaitingForInput && (
+        {isBotThinking && (
           <div className="flex gap-3">
             <div className="w-7 h-7 rounded-md bg-white/10 text-slate-300 border border-white/10 flex items-center justify-center shrink-0">
               <Bot className="w-3.5 h-3.5" />
