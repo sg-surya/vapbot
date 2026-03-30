@@ -26,9 +26,13 @@ export default function ChatPreview({ nodes, edges, onClose }: ChatPreviewProps)
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
   const [isBotThinking, setIsBotThinking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isInitialized = useRef(false);
 
   // Initialize chat
   useEffect(() => {
+    if (isInitialized.current) return;
+    isInitialized.current = true;
+
     if (nodes.length === 0) {
       addMessage('bot', 'No nodes found in the flow.');
       return;

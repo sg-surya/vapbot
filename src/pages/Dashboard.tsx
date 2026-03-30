@@ -98,11 +98,20 @@ export default function Dashboard() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ name: newBotName.trim() })
+        body: JSON.stringify({ 
+          name: newBotName.trim(),
+          description: creationMethod === 'ai' ? aiPrompt.trim() : ''
+        })
       });
       if (res.ok) {
-        fetchBots();
+        const newBot = await res.json();
         setIsCreateModalOpen(false);
+        // Navigate to builder with prompt if AI method was used
+        if (creationMethod === 'ai' && aiPrompt.trim()) {
+          navigate(`/builder/${newBot.id}?prompt=${encodeURIComponent(aiPrompt.trim())}`);
+        } else {
+          navigate(`/builder/${newBot.id}`);
+        }
       }
     } catch (error) {
       console.error('Failed to create bot', error);
@@ -186,7 +195,7 @@ export default function Dashboard() {
                 className="fixed inset-0 z-40"
                 onClick={() => setIsProfileDropdownOpen(false)}
               ></div>
-              <div className={`absolute bottom-full ${isSidebarCollapsed ? 'left-14' : 'left-0'} mb-3 w-56 bg-[#1A1D24] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200`}>
+              <div className={`absolute bottom-full ${isSidebarCollapsed ? 'left-14' : 'left-0'} mb-3 w-56 bg-[#1A1D24] border border-white/10 rounded-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200`}>
                 <div className="p-4 border-b border-white/5">
                   <p className="text-sm font-medium text-white truncate">{user?.email?.split('@')[0]}</p>
                   <p className="text-xs text-slate-400 truncate">{user?.email}</p>
@@ -270,7 +279,7 @@ export default function Dashboard() {
               <div className="max-w-2xl mx-auto mt-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <div className="relative group">
                   <div className="absolute -inset-1 bg-gradient-to-r from-[#ff8a00] to-[#e52e71] rounded-3xl blur opacity-10 group-hover:opacity-20 transition duration-1000"></div>
-                  <div className="relative flex flex-col items-center bg-[#11141B]/95 backdrop-blur-3xl border border-white/5 rounded-3xl p-12 shadow-2xl text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),inset_0_2px_15px_rgba(0,0,0,0.5)]">
+                  <div className="relative flex flex-col items-center bg-[#11141B]/95 backdrop-blur-3xl border border-white/5 rounded-3xl p-12 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),inset_0_2px_15px_rgba(0,0,0,0.5)]">
                     <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6 shadow-inner">
                       <Bot className="w-10 h-10 text-slate-400" />
                     </div>
@@ -289,7 +298,7 @@ export default function Dashboard() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {bots.map((bot) => (
-                  <div key={bot.id} className="relative p-[1px] rounded-2xl bg-gradient-to-b from-white/10 to-transparent shadow-2xl group hover:-translate-y-2 transition-all duration-300">
+                  <div key={bot.id} className="relative p-[1px] rounded-2xl bg-gradient-to-b from-white/10 to-transparent group hover:-translate-y-2 transition-all duration-300">
                     <div className="absolute inset-0 rounded-2xl bg-[#11141B]/95 backdrop-blur-3xl"></div>
                     <div className="relative p-6 rounded-2xl flex flex-col h-full border border-white/5 shadow-[inset_0_2px_15px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)]">
                       <div className="flex items-start justify-between mb-6">
@@ -368,7 +377,7 @@ export default function Dashboard() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {publicBots.map((bot) => (
-                  <div key={bot.id} className="relative p-[1px] rounded-2xl bg-gradient-to-b from-white/10 to-transparent shadow-2xl group hover:-translate-y-2 transition-all duration-300">
+                  <div key={bot.id} className="relative p-[1px] rounded-2xl bg-gradient-to-b from-white/10 to-transparent group hover:-translate-y-2 transition-all duration-300">
                     <div className="absolute inset-0 rounded-2xl bg-[#11141B]/95 backdrop-blur-3xl"></div>
                     <div className="relative p-6 rounded-2xl flex flex-col h-full border border-white/5 shadow-[inset_0_2px_15px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)]">
                       <div className="flex items-start justify-between mb-6">
@@ -412,7 +421,7 @@ export default function Dashboard() {
       {/* Create Bot Modal */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className={`bg-[#11141B]/95 backdrop-blur-3xl border border-white/5 rounded-2xl p-8 w-full ${createStep === 3 ? 'max-w-md' : 'max-w-4xl'} shadow-2xl relative transition-all duration-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),inset_0_2px_15px_rgba(0,0,0,0.5)]`}>
+          <div className={`bg-[#11141B]/95 backdrop-blur-3xl border border-white/5 rounded-2xl p-8 w-full ${createStep === 3 ? 'max-w-md' : 'max-w-4xl'} relative transition-all duration-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),inset_0_2px_15px_rgba(0,0,0,0.5)]`}>
             <button 
               onClick={() => setIsCreateModalOpen(false)}
               className="absolute top-4 right-4 p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors z-10"
@@ -592,7 +601,7 @@ export default function Dashboard() {
       {/* Delete Confirmation Modal */}
       {botToDelete !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#11141B]/95 backdrop-blur-3xl border border-white/5 rounded-2xl p-6 w-full max-w-md shadow-2xl relative shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),inset_0_2px_15px_rgba(0,0,0,0.5)]">
+          <div className="bg-[#11141B]/95 backdrop-blur-3xl border border-white/5 rounded-2xl p-6 w-full max-w-md relative shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),inset_0_2px_15px_rgba(0,0,0,0.5)]">
             <h2 className="text-xl font-medium text-white mb-2">Delete Agent</h2>
             <p className="text-slate-400 mb-6 font-light">Are you sure you want to delete this agent? This action cannot be undone.</p>
             <div className="flex justify-end gap-3">
