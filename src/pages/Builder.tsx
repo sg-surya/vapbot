@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { Logo } from '../components/Logo';
 import { GoogleGenAI, Type } from "@google/genai";
 import {
   ReactFlow,
@@ -202,7 +203,7 @@ export default function Builder() {
       
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `You are an expert chatbot designer. Create a logical and comprehensive conversation flow for a chatbot based on this description: "${userPrompt}".
+        contents: `Create a logical and comprehensive conversation flow for a chatbot based on this description: "${userPrompt}".
         
         The flow should include:
         1. A welcome message.
@@ -210,29 +211,38 @@ export default function Builder() {
         3. AI-powered responses or processing steps.
         4. Logical transitions.
         
+        CRITICAL CONTENT REQUIREMENTS: 
+        - EVERY node must have a non-empty 'label' (e.g., "Welcome Message", "Collect User Name").
+        - 'message' nodes MUST have a 'text' field with a helpful, friendly message (at least 15-20 words).
+        - 'ai' nodes MUST have a 'prompt' field with clear instructions for the AI (at least 15-20 words).
+        - 'input' nodes MUST have a 'variable' name (e.g., "userName", "userEmail").
+        - DO NOT generate empty or placeholder nodes.
+        - Ensure the conversation feels natural and complete.
+        
         Return a JSON object with 'nodes' and 'edges' arrays.
         Nodes must have:
         - id: string (e.g., "dndnode_0", "dndnode_1", ...)
         - type: "custom"
-        - position: { x: number, y: number } (Arrange them logically, e.g., starting at x:100, y:150 and moving right/down)
+        - position: { x: number, y: number }
         - data: { 
-            label: string (short title), 
+            label: string, 
             type: "message" | "input" | "condition" | "api" | "delay" | "image" | "ai",
-            text?: string (for message),
-            variable?: string (for input/condition),
-            prompt?: string (for ai),
-            url?: string (for api/image),
-            method?: string (for api),
-            time?: string (for delay)
+            text?: string,
+            variable?: string,
+            prompt?: string,
+            url?: string,
+            method?: string,
+            time?: string
           }
         
         Edges must have:
-        - id: string (e.g., "e0-1")
-        - source: string (node id)
-        - target: string (node id)
+        - id: string
+        - source: string
+        - target: string
         
         Ensure the flow is complete and ready to use.`,
         config: {
+          systemInstruction: "You are an expert chatbot designer. You must always generate complete, non-empty conversation flows in JSON format. Every message node must have a substantial text response. Every AI node must have a detailed prompt.",
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -283,9 +293,73 @@ export default function Builder() {
         }
       });
 
+      if (!response.text) {
+        throw new Error('AI failed to generate a response. Please try a different prompt.');
+      }
+
       const result = JSON.parse(response.text || '{}');
-      const generatedNodes = result.nodes || [];
+      let generatedNodes = result.nodes || [];
       const generatedEdges = result.edges || [];
+
+      if (generatedNodes.length === 0) {
+        throw new Error('AI generated an empty flow. Please try a more detailed prompt.');
+      }
+
+      // Improve Layout: Calculate levels for nodes to avoid messiness
+      const nodeLevels: Record<string, number> = {};
+      const adj: Record<string, string[]> = {};
+      const inDegree: Record<string, number> = {};
+
+      generatedNodes.forEach((n: any) => {
+        adj[n.id] = [];
+        inDegree[n.id] = 0;
+      });
+
+      generatedEdges.forEach((e: any) => {
+        if (adj[e.source]) adj[e.source].push(e.target);
+        if (inDegree[e.target] !== undefined) inDegree[e.target]++;
+      });
+
+      // BFS to find levels
+      const queue: { id: string; level: number }[] = [];
+      generatedNodes.forEach((n: any) => {
+        if (inDegree[n.id] === 0) queue.push({ id: n.id, level: 0 });
+      });
+
+      // If no start nodes found, just pick the first one
+      if (queue.length === 0 && generatedNodes.length > 0) {
+        queue.push({ id: generatedNodes[0].id, level: 0 });
+      }
+
+      const processed = new Set<string>();
+      const levelCounts: Record<number, number> = {};
+
+      while (queue.length > 0) {
+        const { id, level } = queue.shift()!;
+        if (processed.has(id)) continue;
+        processed.add(id);
+
+        nodeLevels[id] = level;
+        levelCounts[level] = (levelCounts[level] || 0) + 1;
+
+        adj[id].forEach(targetId => {
+          queue.push({ id: targetId, level: level + 1 });
+        });
+      }
+
+      // Assign positions based on levels
+      generatedNodes = generatedNodes.map((node: any) => {
+        const level = nodeLevels[node.id] || 0;
+        const indexInLevel = Object.keys(nodeLevels).filter(id => nodeLevels[id] === level).indexOf(node.id);
+        
+        return {
+          ...node,
+          position: { 
+            x: 100 + level * 350, 
+            y: 150 + indexInLevel * 250 
+          }
+        };
+      });
 
       setGenerationStep('Designing conversation structure...');
       await new Promise(r => setTimeout(r, 800));
@@ -473,23 +547,21 @@ export default function Builder() {
 
       {/* Main Container */}
       <main className="flex-1 relative z-10 bg-[#0B0F19]/80 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden flex flex-col">
-        {/* Top Navigation Bar - Minimal & Floating */}
-        <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-6 pointer-events-none">
+        {/* Top Navigation Bar - Minimal & Integrated */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-black/20">
           {/* Left: Agent Info */}
-          <div className="flex items-center gap-3 pointer-events-auto">
+          <div className="flex items-center gap-3">
             <button onClick={() => navigate('/dashboard')} className="p-2 bg-[#1A1D24]/80 backdrop-blur-xl border border-white/10 rounded-xl text-slate-400 hover:text-white transition-colors shadow-lg">
               <ArrowLeft className="w-4 h-4" />
             </button>
-            <div className="flex items-center gap-2 bg-[#1A1D24]/80 backdrop-blur-xl border border-white/10 rounded-xl px-3 py-2 shadow-lg">
-              <div className="w-6 h-6 bg-gradient-to-br from-[#ff8a00] to-[#e52e71] rounded-md flex items-center justify-center text-white font-bold text-[10px] shadow-[0_0_10px_rgba(255,138,0,0.3)]">
-                {botName.charAt(0).toUpperCase()}
-              </div>
+            <div className="flex items-center gap-2 bg-[#1A1D24]/80 backdrop-blur-xl border border-white/10 rounded-xl px-2 py-1.5 shadow-lg">
+              <Logo className="w-5 h-5" />
               <h1 className="font-mono text-slate-200 text-xs tracking-wide truncate max-w-[150px]">{botName}</h1>
             </div>
           </div>
 
           {/* Center: Navigation Steps */}
-          <div className="flex items-center gap-1 pointer-events-auto text-[10px] font-mono text-slate-400 uppercase tracking-widest">
+          <div className="flex items-center gap-1 text-[10px] font-mono text-slate-400 uppercase tracking-widest">
             <div className="flex items-center gap-1 bg-[#1A1D24]/80 backdrop-blur-xl border border-white/10 rounded-xl px-1 py-1 shadow-lg">
               <button className="px-3 py-1 bg-white/10 text-white rounded-lg border border-white/5">Build</button>
               <span className="text-slate-600 px-0.5">&rsaquo;</span>
@@ -504,7 +576,7 @@ export default function Builder() {
           </div>
 
           {/* Right: Actions */}
-          <div className="flex items-center gap-2 pointer-events-auto">
+          <div className="flex items-center gap-2">
             <button onClick={handleSave} disabled={isSaving} className="px-4 py-2 flex items-center gap-2 rounded-xl bg-[#1A1D24]/80 backdrop-blur-xl border border-white/10 text-slate-300 hover:bg-white/10 transition-colors text-[10px] font-mono uppercase tracking-wider shadow-lg" title="Save">
               <Save className="w-3.5 h-3.5" />
               Save
@@ -518,7 +590,7 @@ export default function Builder() {
               disabled={isPublishing}
               className={`px-5 py-2 font-mono uppercase tracking-wider rounded-xl transition-all text-[10px] shadow-lg ${
                 isPublished 
-                  ? 'bg-green-500/20 text-green-400 border border-green-500/20 hover:bg-green-500/30 backdrop-blur-xl' 
+                  ? 'bg-white/10 text-white border border-white/10 hover:bg-white/20 backdrop-blur-xl' 
                   : 'bg-gradient-to-r from-[#ff8a00] to-[#e52e71] text-white hover:shadow-[0_0_15px_rgba(255,138,0,0.4)]'
               }`}
             >
@@ -548,30 +620,6 @@ export default function Builder() {
               >
                 <Background color="#475569" gap={20} size={1} opacity={0.3} />
                 
-                {/* Floating Add Button */}
-                <Panel position="top-left" className="m-4">
-                  <div className="relative">
-                    <button 
-                      onClick={() => setShowAddMenu(!showAddMenu)}
-                      className="w-10 h-10 bg-[#1A1D24] hover:bg-white/10 border border-white/10 backdrop-blur-md text-white rounded-md flex items-center justify-center transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
-                    >
-                      <Plus className="w-5 h-5" />
-                    </button>
-                    
-                    {showAddMenu && (
-                      <div className="absolute top-12 left-0 bg-[#1A1D24]/95 backdrop-blur-xl rounded-md border border-white/10 w-48 py-1 z-50 animate-in fade-in slide-in-from-top-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
-                        <button onClick={() => addNode('message')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><MessageSquare className="w-3.5 h-3.5 text-blue-400" /> Message</button>
-                        <button onClick={() => addNode('input')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><TypeIcon className="w-3.5 h-3.5 text-orange-400" /> User Input</button>
-                        <button onClick={() => addNode('condition')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><GitBranch className="w-3.5 h-3.5 text-purple-400" /> Condition</button>
-                        <button onClick={() => addNode('api')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><Globe className="w-3.5 h-3.5 text-green-400" /> API Request</button>
-                        <button onClick={() => addNode('delay')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><Clock className="w-3.5 h-3.5 text-yellow-400" /> Delay</button>
-                        <button onClick={() => addNode('image')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><ImageIcon className="w-3.5 h-3.5 text-pink-400" /> Image</button>
-                        <button onClick={() => addNode('ai')} className="w-full px-3 py-2 text-left text-[11px] font-mono uppercase tracking-wider hover:bg-white/5 flex items-center gap-3 text-slate-300 transition-colors"><Bot className="w-3.5 h-3.5 text-indigo-400" /> AI Response</button>
-                      </div>
-                    )}
-                  </div>
-                </Panel>
-
                 <Controls className="bg-[#1A1D24]/80 border-white/10 fill-slate-400 rounded-md overflow-hidden backdrop-blur-md" showInteractive={false} />
               </ReactFlow>
             </ReactFlowProvider>
@@ -580,13 +628,13 @@ export default function Builder() {
           {/* Right Settings Panel */}
           {selectedNode && (
             <div className="w-72 bg-[#1A1D24]/95 backdrop-blur-xl border-l border-white/10 z-20 flex flex-col animate-in slide-in-from-right-8 shadow-[inset_1px_0_1px_rgba(255,255,255,0.05)]">
-              <div className="p-4 border-b border-white/5 flex items-center justify-between bg-black/20">
-                <div>
-                  <h2 className="text-[11px] font-mono text-slate-200 uppercase tracking-widest">Node Settings</h2>
-                  <p className="text-[9px] text-slate-500 font-mono uppercase tracking-widest mt-1">{selectedNode.data.type} Configuration</p>
+              <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between bg-black/20">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                  <h2 className="text-[10px] font-mono text-slate-300 uppercase tracking-[0.2em]">Settings</h2>
                 </div>
-                <button onClick={() => setSelectedNode(null)} className="p-1.5 hover:bg-white/10 rounded-md text-slate-400 transition-colors">
-                  <ArrowLeft className="w-3.5 h-3.5" />
+                <button onClick={() => setSelectedNode(null)} className="p-1 hover:bg-white/10 rounded text-slate-500 hover:text-white transition-colors">
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
 
@@ -785,28 +833,23 @@ export default function Builder() {
           </div>
         </div>
       )}
-      {/* AI Generation Overlay */}
+      {/* AI Generation Overlay - Floating Bottom Bar */}
       {isGenerating && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0B0F19]/40 backdrop-blur-[2px] animate-in fade-in duration-700 pointer-events-none">
-          <div className="flex flex-col items-center text-center max-w-sm w-full bg-[#11141B]/90 p-10 rounded-[2.5rem] border border-white/10 shadow-[inset_0_2px_20px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.05),0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
-            {/* Subtle light sweep effect */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.02] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-            
-            <div className="relative mb-8">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500/10 to-pink-500/10 border border-orange-500/20 flex items-center justify-center shadow-[inset_0_2px_10px_rgba(0,0,0,0.3)]">
-                <Bot className="w-8 h-8 text-orange-500/80 animate-pulse" />
-              </div>
-              <div className="absolute -inset-4 bg-orange-500/5 blur-2xl rounded-full animate-pulse"></div>
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-4 bg-white/5 backdrop-blur-2xl px-6 py-3 rounded-2xl border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] animate-in slide-in-from-bottom-4 duration-500">
+          <div className="relative">
+            <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+              <Bot className="w-4 h-4 text-white/80 animate-pulse" />
             </div>
-            
-            <div className="space-y-1 mb-8">
-              <h2 className="text-sm font-mono text-white/90 uppercase tracking-[0.3em]">Architecting</h2>
-              <p className="text-slate-500 font-mono text-[9px] uppercase tracking-widest h-4 animate-pulse">{generationStep}</p>
-            </div>
-            
-            <div className="w-32 h-[1px] bg-white/5 rounded-full overflow-hidden relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-orange-500/40 to-transparent bg-[length:200%_100%] animate-shimmer"></div>
-            </div>
+            <div className="absolute -inset-2 bg-white/5 blur-xl rounded-full animate-pulse"></div>
+          </div>
+          
+          <div className="flex flex-col">
+            <span className="text-[10px] font-mono text-white/90 uppercase tracking-[0.2em]">Architecting</span>
+            <span className="text-slate-400 font-mono text-[8px] uppercase tracking-widest animate-pulse">{generationStep}</span>
+          </div>
+
+          <div className="w-16 h-[1px] bg-white/10 rounded-full overflow-hidden relative ml-2">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent bg-[length:200%_100%] animate-shimmer"></div>
           </div>
         </div>
       )}

@@ -83,7 +83,8 @@ export default function ChatPreview({ nodes, edges, onClose }: ChatPreviewProps)
 
     try {
       if (nodeType === 'message') {
-        const text = replaceVariables((node.data.text as string) || '');
+        const rawText = (node.data.text as string) || '';
+        const text = replaceVariables(rawText) || '...';
         addMessage('bot', text);
         setTimeout(() => moveToNextNode(nodeId), 800);
       } 
@@ -137,20 +138,33 @@ export default function ChatPreview({ nodes, edges, onClose }: ChatPreviewProps)
         moveToNextNode(nodeId);
       }
       else if (nodeType === 'ai') {
-        const prompt = replaceVariables((node.data.prompt as string) || '');
+        const rawPrompt = (node.data.prompt as string) || '';
+        const prompt = replaceVariables(rawPrompt) || 'Respond to the user naturally based on the conversation context.';
         
         const history = messages.map(m => `${m.sender === 'bot' ? 'Assistant' : 'User'}: ${m.text}`).join('\n');
         const fullPrompt = `Conversation history:\n${history}\n\nInstructions: ${prompt}\n\nAssistant:`;
 
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-        const response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
-          contents: fullPrompt,
-        });
+        try {
+          const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+          const response = await ai.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: fullPrompt,
+          });
 
-        const aiText = response.text || "I'm sorry, I couldn't generate a response.";
-        addMessage('bot', aiText);
-        setTimeout(() => moveToNextNode(nodeId), 800);
+          const aiText = response.text || "I'm sorry, I couldn't generate a response.";
+          addMessage('bot', aiText);
+          setTimeout(() => moveToNextNode(nodeId), 800);
+        } catch (e) {
+          console.error('AI Node execution error', e);
+          addMessage('bot', "I'm having trouble thinking right now. Let's continue.");
+          setIsBotThinking(false);
+          setTimeout(() => moveToNextNode(nodeId), 800);
+        }
+      } else {
+        // Fallback for unknown node types
+        console.warn(`Unknown node type: ${nodeType}`);
+        setIsBotThinking(false);
+        moveToNextNode(nodeId);
       }
     } catch (error) {
       console.error('Node execution error', error);
@@ -179,15 +193,17 @@ export default function ChatPreview({ nodes, edges, onClose }: ChatPreviewProps)
     const node = nodes.find(n => n.id === currentNodeId);
     if (!node || node.data.type !== 'input') return;
 
-    addMessage('user', inputValue);
+    const userText = inputValue.trim();
+    addMessage('user', userText);
 
     const variableName = (node.data.variable as string) || 'input';
-    const newVars = { ...variablesRef.current, [variableName]: inputValue };
+    const newVars = { ...variablesRef.current, [variableName]: userText };
     variablesRef.current = newVars;
     setVariables(newVars);
 
     setInputValue('');
     setIsWaitingForInput(false);
+    setIsBotThinking(true); // Show typing while moving to next node
 
     setTimeout(() => {
       moveToNextNode(currentNodeId);

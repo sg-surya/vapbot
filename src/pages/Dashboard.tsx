@@ -1,6 +1,7 @@
 import React, { useEffect, useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { Logo } from '../components/Logo';
 import { Plus, Trash2, Bot, LogOut, LayoutTemplate, BarChart2, Settings, PanelLeftClose, PanelLeftOpen, MonitorSmartphone, MessageCircle, MessageSquare, Code, ArrowLeft, X, ChevronRight, ExternalLink, Layout, Wand2, Brush, Puzzle, Mic, ArrowRight } from 'lucide-react';
 
 interface BotData {
@@ -153,10 +154,13 @@ export default function Dashboard() {
       {/* Sidebar */}
       <aside className={`${isSidebarCollapsed ? 'w-20' : 'w-64'} transition-all duration-300 flex-shrink-0 flex flex-col justify-between relative z-10 bg-transparent py-6 px-4`}>
         <div>
-          <div className="mb-10 px-2 flex items-center justify-center">
-            <span className={`font-bold tracking-tight text-orange-500 lowercase whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarCollapsed ? 'text-xl' : 'text-2xl'}`}>
-              vapbot<span className="text-orange-500">.</span>
-            </span>
+          <div className="mb-10 px-2 flex items-center gap-3">
+            <Logo className="w-8 h-8" />
+            {!isSidebarCollapsed && (
+              <span className="font-bold tracking-tight text-white text-2xl lowercase whitespace-nowrap overflow-hidden transition-all duration-300">
+                vapbot<span className="text-orange-500">.</span>
+              </span>
+            )}
           </div>
           
           <nav className="space-y-2">
