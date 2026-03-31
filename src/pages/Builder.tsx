@@ -20,11 +20,40 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { ArrowLeft, Save, Play, MessageSquare, Type as TypeIcon, GitBranch, Globe, Clock, Image as ImageIcon, Plus, MoreHorizontal, Check, Trash2, Bot, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Save, Play, MessageSquare, Type as TypeIcon, GitBranch, Globe, Clock, Image as ImageIcon, Plus, MoreHorizontal, Check, Trash2, Bot, X, Flag } from 'lucide-react';
 import ChatPreview from '../components/ChatPreview';
 
 // Custom Node Design based on the provided image
 const CustomNode = ({ data, isConnectable }: any) => {
+  const isStartNode = data.label === 'Starting point';
+
+  if (isStartNode) {
+    return (
+      <div className="bg-[#1A1D24]/95 backdrop-blur-xl rounded-xl border border-white/10 w-[260px] h-[70px] flex items-center px-4 gap-4 shadow-2xl relative group hover:border-white/20 transition-all">
+        {/* Checkered Flag Icon */}
+        <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+          <Flag className="w-5 h-5 text-white" />
+        </div>
+        
+        {/* Text Content */}
+        <div className="flex flex-col justify-center overflow-hidden">
+          <h3 className="text-sm font-bold text-white tracking-tight leading-none mb-1">Starting point</h3>
+          <p className="text-[10px] text-slate-400 font-medium truncate">Where your bot begins</p>
+        </div>
+
+        {/* Output Handle with Arrow Icon */}
+        <Handle 
+          type="source" 
+          position={Position.Right} 
+          isConnectable={isConnectable} 
+          className="!w-8 !h-8 !bg-[#00D1FF] !border-none !-right-4 flex items-center justify-center shadow-lg hover:scale-110 transition-transform !top-1/2 !-translate-y-1/2"
+        >
+          <ArrowRight className="w-4 h-4 text-white" />
+        </Handle>
+      </div>
+    );
+  }
+
   let Icon = MessageSquare;
   let headerColor = 'text-blue-400';
   let previewText = '';
@@ -183,6 +212,21 @@ export default function Builder() {
             // Trigger AI Generation if flow is empty and prompt exists
             hasGeneratedRef.current = true;
             generateAIFlow(prompt);
+          } else {
+            // Manual creation: Add starting node
+            const startNode = {
+              id: 'dndnode_0',
+              type: 'custom',
+              position: { x: 250, y: 250 },
+              data: { 
+                label: 'Starting point', 
+                type: 'message', 
+                text: 'Where your bot begins',
+                onDelete: deleteNode
+              },
+            };
+            setNodes([startNode]);
+            id = 1;
           }
         }
       } catch (error) {
@@ -421,10 +465,11 @@ export default function Builder() {
     setSelectedNode(node);
   };
 
-  const onPaneClick = () => {
+  const onPaneClick = useCallback(() => {
     setSelectedNode(null);
     setShowAddMenu(false);
-  };
+    setMenuPosition(null);
+  }, []);
 
   const deleteNode = useCallback((nodeId: string) => {
     setNodes((nds) => nds.filter((node) => node.id !== nodeId));
@@ -498,14 +543,38 @@ export default function Builder() {
     }
   };
 
-  const addNode = (type: string) => {
-    if (!reactFlowInstance) return;
+  const [menuPosition, setMenuPosition] = useState<{ x: number, y: number } | null>(null);
+  const [connectingNodeId, setConnectingNodeId] = useState<string | null>(null);
+  const [connectingHandleId, setConnectingHandleId] = useState<string | null>(null);
+
+  const onConnectStart = useCallback((_: any, { nodeId, handleId }: any) => {
+    setConnectingNodeId(nodeId);
+    setConnectingHandleId(handleId);
+  }, []);
+
+  const onConnectEnd = useCallback(
+    (event: any) => {
+      if (!connectingNodeId || !reactFlowInstance) return;
+
+      const targetIsPane = event.target.classList.contains('react-flow__pane');
+
+      if (targetIsPane) {
+        const { clientX, clientY } = 'clientX' in event ? event : event.touches[0];
+        setMenuPosition({ x: clientX, y: clientY });
+      }
+    },
+    [connectingNodeId, reactFlowInstance]
+  );
+
+  const addAndConnectNode = (type: string) => {
+    if (!menuPosition || !reactFlowInstance || !connectingNodeId) return;
 
     const position = reactFlowInstance.screenToFlowPosition({
-      x: window.innerWidth / 2,
-      y: window.innerHeight / 2,
+      x: menuPosition.x,
+      y: menuPosition.y,
     });
-    
+
+    const newNodeId = getId();
     let label = 'Node';
     let defaultData = {};
 
@@ -520,11 +589,11 @@ export default function Builder() {
     }
 
     const newNode: Node = {
-      id: getId(),
+      id: newNodeId,
       type: 'custom',
       position,
       data: { 
-        id: getId(), // We need the ID in data for deletion
+        id: newNodeId,
         label,
         type,
         onDelete: deleteNode,
@@ -532,8 +601,18 @@ export default function Builder() {
       },
     };
 
+    const newEdge: Edge = {
+      id: `e-${connectingNodeId}-${newNodeId}`,
+      source: connectingNodeId,
+      target: newNodeId,
+      sourceHandle: connectingHandleId,
+    };
+
     setNodes((nds) => nds.concat(newNode));
-    setShowAddMenu(false);
+    setEdges((eds) => eds.concat(newEdge));
+    setMenuPosition(null);
+    setConnectingNodeId(null);
+    setConnectingHandleId(null);
   };
 
   return (
@@ -546,61 +625,60 @@ export default function Builder() {
       </div>
 
       {/* Main Container */}
-      <main className="flex-1 relative z-10 bg-[#0B0F19]/80 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden flex flex-col">
-        {/* Top Navigation Bar - Minimal & Integrated */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-black/20">
-          {/* Left: Agent Info */}
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/dashboard')} className="p-2 bg-[#1A1D24]/80 backdrop-blur-xl border border-white/10 rounded-xl text-slate-400 hover:text-white transition-colors shadow-lg">
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <div className="flex items-center gap-2 bg-[#1A1D24]/80 backdrop-blur-xl border border-white/10 rounded-xl px-2 py-1.5 shadow-lg">
-              <Logo className="w-5 h-5" />
-              <h1 className="font-mono text-slate-200 text-xs tracking-wide truncate max-w-[150px]">{botName}</h1>
-            </div>
-          </div>
-
-          {/* Center: Navigation Steps */}
-          <div className="flex items-center gap-1 text-[10px] font-mono text-slate-400 uppercase tracking-widest">
-            <div className="flex items-center gap-1 bg-[#1A1D24]/80 backdrop-blur-xl border border-white/10 rounded-xl px-1 py-1 shadow-lg">
-              <button className="px-3 py-1 bg-white/10 text-white rounded-lg border border-white/5">Build</button>
-              <span className="text-slate-600 px-0.5">&rsaquo;</span>
-              <button className="px-3 py-1 hover:bg-white/5 rounded-lg transition-colors">Design</button>
-              <span className="text-slate-600 px-0.5">&rsaquo;</span>
-              <button className="px-3 py-1 hover:bg-white/5 rounded-lg transition-colors">Settings</button>
-              <span className="text-slate-600 px-0.5">&rsaquo;</span>
-              <button className="px-3 py-1 hover:bg-white/5 rounded-lg transition-colors">Share</button>
-              <span className="text-slate-600 px-0.5">&rsaquo;</span>
-              <button className="px-3 py-1 hover:bg-white/5 rounded-lg transition-colors">Analyze</button>
-            </div>
-          </div>
-
-          {/* Right: Actions */}
-          <div className="flex items-center gap-2">
-            <button onClick={handleSave} disabled={isSaving} className="px-4 py-2 flex items-center gap-2 rounded-xl bg-[#1A1D24]/80 backdrop-blur-xl border border-white/10 text-slate-300 hover:bg-white/10 transition-colors text-[10px] font-mono uppercase tracking-wider shadow-lg" title="Save">
-              <Save className="w-3.5 h-3.5" />
-              Save
-            </button>
-            <button onClick={() => setIsChatOpen(true)} className="px-4 py-2 bg-[#1A1D24]/80 backdrop-blur-xl border border-white/10 text-slate-300 font-mono uppercase tracking-wider rounded-xl hover:bg-white/5 transition-colors text-[10px] flex items-center gap-2 shadow-lg">
-              <Play className="w-3.5 h-3.5" />
-              Test
-            </button>
-            <button 
-              onClick={handlePublish}
-              disabled={isPublishing}
-              className={`px-5 py-2 font-mono uppercase tracking-wider rounded-xl transition-all text-[10px] shadow-lg ${
-                isPublished 
-                  ? 'bg-white/10 text-white border border-white/10 hover:bg-white/20 backdrop-blur-xl' 
-                  : 'bg-gradient-to-r from-[#ff8a00] to-[#e52e71] text-white hover:shadow-[0_0_15px_rgba(255,138,0,0.4)]'
-              }`}
-            >
-              {isPublishing ? '...' : isPublished ? 'Published' : 'Publish'}
-            </button>
+      <main className="flex-1 relative z-10 bg-[#0B0F19]/80 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden">
+        {/* Floating Header Elements */}
+        
+        {/* Left: Agent Info */}
+        <div className="absolute top-6 left-6 z-[100] flex items-center gap-3">
+          <button onClick={() => navigate('/dashboard')} className="p-2 bg-[#1A1D24]/80 backdrop-blur-xl border border-white/10 rounded-xl text-slate-400 hover:text-white transition-colors shadow-lg">
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div className="flex items-center gap-2 bg-[#1A1D24]/80 backdrop-blur-xl border border-white/10 rounded-xl px-2 py-1.5 shadow-lg">
+            <Logo className="w-5 h-5" />
+            <h1 className="font-mono text-slate-200 text-xs tracking-wide truncate max-w-[150px]">{botName}</h1>
           </div>
         </div>
 
+        {/* Center: Navigation Steps */}
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-1 text-[10px] font-mono text-slate-400 uppercase tracking-widest">
+          <div className="flex items-center gap-1 bg-[#1A1D24]/80 backdrop-blur-xl border border-white/10 rounded-xl px-1 py-1 shadow-lg">
+            <button className="px-3 py-1 bg-white/10 text-white rounded-lg border border-white/5">Build</button>
+            <span className="text-slate-600 px-0.5">&rsaquo;</span>
+            <button className="px-3 py-1 hover:bg-white/5 rounded-lg transition-colors">Design</button>
+            <span className="text-slate-600 px-0.5">&rsaquo;</span>
+            <button className="px-3 py-1 hover:bg-white/5 rounded-lg transition-colors">Settings</button>
+            <span className="text-slate-600 px-0.5">&rsaquo;</span>
+            <button className="px-3 py-1 hover:bg-white/5 rounded-lg transition-colors">Share</button>
+            <span className="text-slate-600 px-0.5">&rsaquo;</span>
+            <button className="px-3 py-1 hover:bg-white/5 rounded-lg transition-colors">Analyze</button>
+          </div>
+        </div>
+
+        {/* Right: Actions */}
+        <div className="absolute top-6 right-6 z-[100] flex items-center gap-2">
+          <button onClick={handleSave} disabled={isSaving} className="px-4 py-2 flex items-center gap-2 rounded-xl bg-[#1A1D24]/80 backdrop-blur-xl border border-white/10 text-slate-300 hover:bg-white/10 transition-colors text-[10px] font-mono uppercase tracking-wider shadow-lg" title="Save">
+            <Save className="w-3.5 h-3.5" />
+            Save
+          </button>
+          <button onClick={() => setIsChatOpen(true)} className="px-4 py-2 bg-[#1A1D24]/80 backdrop-blur-xl border border-white/10 text-slate-300 font-mono uppercase tracking-wider rounded-xl hover:bg-white/5 transition-colors text-[10px] flex items-center gap-2 shadow-lg">
+            <Play className="w-3.5 h-3.5" />
+            Test
+          </button>
+          <button 
+            onClick={handlePublish}
+            disabled={isPublishing}
+            className={`px-5 py-2 font-mono uppercase tracking-wider rounded-xl transition-all text-[10px] shadow-lg ${
+              isPublished 
+                ? 'bg-white/10 text-white border border-white/10 hover:bg-white/20 backdrop-blur-xl' 
+                : 'bg-gradient-to-r from-[#ff8a00] to-[#e52e71] text-white hover:shadow-[0_0_15px_rgba(255,138,0,0.4)]'
+            }`}
+          >
+            {isPublishing ? '...' : isPublished ? 'Published' : 'Publish'}
+          </button>
+        </div>
+
         {/* Main Builder Area */}
-        <div className="flex-1 flex relative overflow-hidden">
+        <div className="h-full w-full relative flex overflow-hidden">
           {/* Canvas */}
           <div className="flex-1 relative" ref={reactFlowWrapper}>
             <ReactFlowProvider>
@@ -611,6 +689,8 @@ export default function Builder() {
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
+                onConnectStart={onConnectStart}
+                onConnectEnd={onConnectEnd}
                 onInit={setReactFlowInstance}
                 onNodeClick={onNodeClick}
                 onPaneClick={onPaneClick}
@@ -833,23 +913,57 @@ export default function Builder() {
           </div>
         </div>
       )}
-      {/* AI Generation Overlay - Floating Bottom Bar */}
-      {isGenerating && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-4 bg-white/5 backdrop-blur-2xl px-6 py-3 rounded-2xl border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] animate-in slide-in-from-bottom-4 duration-500">
-          <div className="relative">
-            <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
-              <Bot className="w-4 h-4 text-white/80 animate-pulse" />
+      {/* Quick Add Menu */}
+      {menuPosition && (
+        <div 
+          className="fixed z-[1000] w-64 bg-[#1A1D24]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+          style={{ left: menuPosition.x, top: menuPosition.y }}
+        >
+          <div className="p-3 border-b border-white/5 bg-black/20">
+            <div className="relative">
+              <input 
+                type="text"
+                placeholder="Search by name"
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50"
+              />
             </div>
-            <div className="absolute -inset-2 bg-white/5 blur-xl rounded-full animate-pulse"></div>
           </div>
           
-          <div className="flex flex-col">
-            <span className="text-[10px] font-mono text-white/90 uppercase tracking-[0.2em]">Architecting</span>
-            <span className="text-slate-400 font-mono text-[8px] uppercase tracking-widest animate-pulse">{generationStep}</span>
-          </div>
+          <div className="p-2 max-h-80 overflow-y-auto custom-scrollbar">
+            <button 
+              onClick={() => addAndConnectNode('ai')}
+              className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/5 transition-all group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 group-hover:bg-indigo-500/20 transition-colors">
+                <Bot className="w-4 h-4 text-indigo-400" />
+              </div>
+              <div className="flex flex-col items-start">
+                <span className="text-xs font-bold text-slate-200">Build it for me!</span>
+                <span className="text-[9px] text-slate-500 uppercase tracking-widest">AI Generation</span>
+              </div>
+            </button>
 
-          <div className="w-16 h-[1px] bg-white/10 rounded-full overflow-hidden relative ml-2">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent bg-[length:200%_100%] animate-shimmer"></div>
+            <div className="h-px bg-white/5 my-2 mx-2" />
+
+            {[
+              { type: 'message', label: 'Message', icon: MessageSquare, color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/20' },
+              { type: 'input', label: 'User Input', icon: TypeIcon, color: 'text-orange-400', bg: 'bg-orange-400/10', border: 'border-orange-400/20' },
+              { type: 'condition', label: 'Condition', icon: GitBranch, color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/20' },
+              { type: 'api', label: 'API Request', icon: Globe, color: 'text-green-400', bg: 'bg-green-400/10', border: 'border-green-400/20' },
+              { type: 'delay', label: 'Delay', icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-400/10', border: 'border-yellow-400/20' },
+              { type: 'image', label: 'Image', icon: ImageIcon, color: 'text-pink-400', bg: 'bg-pink-400/10', border: 'border-pink-400/20' },
+            ].map((item) => (
+              <button 
+                key={item.type}
+                onClick={() => addAndConnectNode(item.type)}
+                className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-all group"
+              >
+                <div className={`w-8 h-8 rounded-lg ${item.bg} flex items-center justify-center border ${item.border} group-hover:scale-110 transition-transform`}>
+                  <item.icon className={`w-4 h-4 ${item.color}`} />
+                </div>
+                <span className="text-xs font-medium text-slate-300 group-hover:text-white transition-colors">{item.label}</span>
+              </button>
+            ))}
           </div>
         </div>
       )}
