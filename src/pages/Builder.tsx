@@ -20,123 +20,199 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { ArrowLeft, ArrowRight, Save, Play, MessageSquare, Type as TypeIcon, GitBranch, Globe, Clock, Image as ImageIcon, Plus, MoreHorizontal, Check, Trash2, Bot, X, Flag } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Save, Play, MessageSquare, Type as TypeIcon, GitBranch, Globe, Clock, Image as ImageIcon, Plus, MoreHorizontal, Check, Trash2, Bot, X, Flag, Sparkles, Phone, Link2, MapPin, List, Star, ThumbsUp, HelpCircle } from 'lucide-react';
 import ChatPreview from '../components/ChatPreview';
 
-// Custom Node Design based on the provided image
+// Custom Node Design - Professional Human-Designed Style
 const CustomNode = ({ data, isConnectable }: any) => {
   const isStartNode = data.label === 'Starting point';
 
   if (isStartNode) {
     return (
-      <div className="bg-[#1A1D24]/95 backdrop-blur-xl rounded-xl border border-white/10 w-[260px] h-[70px] flex items-center px-4 gap-4 shadow-2xl relative group hover:border-white/20 transition-all">
-        {/* Checkered Flag Icon */}
-        <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-          <Flag className="w-5 h-5 text-white" />
+      <div className="bg-gradient-to-br from-[#1E293B] to-[#0F172A] rounded-2xl border border-white/20 w-[280px] h-[80px] flex items-center px-5 gap-4 shadow-[0_8px_30px_rgba(0,0,0,0.4)] relative group hover:border-cyan-400/50 transition-all duration-300">
+        {/* Gradient Orb Icon */}
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center shrink-0 shadow-lg shadow-cyan-500/20">
+          <Flag className="w-6 h-6 text-white" />
         </div>
         
         {/* Text Content */}
-        <div className="flex flex-col justify-center overflow-hidden">
-          <h3 className="text-sm font-bold text-white tracking-tight leading-none mb-1">Starting point</h3>
-          <p className="text-[10px] text-slate-400 font-medium truncate">Where your bot begins</p>
+        <div className="flex flex-col justify-center overflow-hidden flex-1">
+          <h3 className="text-[15px] font-bold text-white tracking-tight leading-tight">Starting point</h3>
+          <p className="text-[11px] text-slate-400 font-medium truncate mt-0.5">Where your bot begins</p>
         </div>
 
-        {/* Output Handle with Arrow Icon */}
+        {/* Output Handle - Centered vertically */}
         <Handle 
           type="source" 
           position={Position.Right} 
-          isConnectable={isConnectable} 
-          className="!w-8 !h-8 !bg-[#00D1FF] !border-none !-right-4 flex items-center justify-center shadow-lg hover:scale-110 transition-transform !top-1/2 !-translate-y-1/2"
+          isConnectable={isConnectable}
+          style={{ top: '50%', transform: 'translateY(-50%)' }}
+          className="!w-10 !h-10 !bg-gradient-to-r !from-[#ff8a00] !to-[#e52e71] !border-2 !border-white/20 flex items-center justify-center shadow-lg hover:scale-110 transition-transform rounded-full"
         >
-          <ArrowRight className="w-4 h-4 text-white" />
+          <ArrowRight className="w-5 h-5 text-white" />
         </Handle>
       </div>
     );
   }
 
   let Icon = MessageSquare;
-  let headerColor = 'text-blue-400';
-  let previewText = '';
+  let gradientFrom = 'from-blue-500';
+  let gradientTo = 'to-blue-600';
+  let headerText = 'Message';
+  let bodyText = '';
 
   switch (data.type) {
     case 'message':
       Icon = MessageSquare;
-      headerColor = 'text-blue-400';
-      previewText = data.text || 'Empty message';
+      gradientFrom = 'from-blue-500';
+      gradientTo = 'to-indigo-600';
+      headerText = 'Message';
+      bodyText = data.text || 'Empty message';
       break;
     case 'input':
       Icon = TypeIcon;
-      headerColor = 'text-orange-400';
-      previewText = data.variable ? `Save to: ${data.variable}` : 'No variable';
+      gradientFrom = 'from-orange-500';
+      gradientTo = 'to-red-500';
+      headerText = data.label || 'User Input';
+      bodyText = data.variable ? `Save to: ${data.variable}` : 'No variable set';
       break;
     case 'condition':
       Icon = GitBranch;
-      headerColor = 'text-purple-400';
-      previewText = data.variable ? `If ${data.variable} ${data.operator} ${data.value}` : 'Setup condition';
+      gradientFrom = 'from-purple-500';
+      gradientTo = 'to-pink-600';
+      headerText = 'Condition';
+      bodyText = data.variable ? `If ${data.variable} ${data.operator} ${data.value}` : 'Setup condition';
       break;
     case 'api':
       Icon = Globe;
-      headerColor = 'text-green-400';
-      previewText = data.method + ' ' + (data.url || 'No URL');
+      gradientFrom = 'from-green-500';
+      gradientTo = 'to-emerald-600';
+      headerText = 'API Request';
+      bodyText = data.method + ' ' + (data.url || 'No URL');
       break;
     case 'delay':
       Icon = Clock;
-      headerColor = 'text-yellow-400';
-      previewText = `Wait ${data.time || 0}s`;
+      gradientFrom = 'from-yellow-500';
+      gradientTo = 'to-amber-600';
+      headerText = 'Delay';
+      bodyText = `Wait ${data.time || 0}s`;
       break;
     case 'image':
       Icon = ImageIcon;
-      headerColor = 'text-pink-400';
-      previewText = data.url ? 'Image URL set' : 'No image';
+      gradientFrom = 'from-pink-500';
+      gradientTo = 'to-rose-600';
+      headerText = 'Image';
+      bodyText = data.url ? 'Image URL set' : 'No image';
       break;
-    case 'ai':
-      Icon = Bot;
-      headerColor = 'text-indigo-400';
-      previewText = data.prompt ? `Prompt: ${data.prompt}` : 'No prompt';
+    case 'buttons':
+      Icon = () => <div className="w-4 h-4 rounded-full bg-blue-500" />;
+      gradientFrom = 'from-blue-500';
+      gradientTo = 'to-indigo-600';
+      headerText = 'Buttons';
+      bodyText = data.text || 'Button options';
       break;
   }
 
-  return (
-    <div className="bg-[#1A1D24]/95 backdrop-blur-xl rounded-md border border-white/10 w-[200px] min-h-[160px] overflow-visible flex flex-col transition-all hover:border-white/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
-      <Handle type="target" position={Position.Left} isConnectable={isConnectable} className="w-2 h-6 bg-slate-500 border-none rounded-r-sm rounded-l-none -ml-[1px]" />
-      
-      {/* Header */}
-      <div className="flex items-center justify-between px-2 py-2 border-b border-white/10 bg-black/20 rounded-t-md shrink-0">
-        <div className="flex items-center gap-2">
-          <div className={`flex items-center justify-center ${headerColor}`}>
-            <Icon className="w-3 h-3" />
+  // Special case for buttons node - show message box + button list
+  if (data.type === 'buttons' || data.label === 'Buttons') {
+    const buttons = data.buttons || [{ label: 'Button' }, { label: 'Any of the above', icon: '?' }];
+    return (
+      <div className="bg-[#1E293B] rounded-xl border border-white/10 w-[280px] overflow-visible flex flex-col transition-all duration-300 hover:border-white/20 shadow-xl">
+        {/* Input Handle */}
+        <Handle type="target" position={Position.Left} isConnectable={isConnectable} 
+          className="!w-2.5 !h-6 !bg-slate-400 !border !border-[#1E293B] !rounded-r-md !-ml-1 !top-1/2 !-translate-y-1/2" />
+        
+        {/* Header - Blue with circle icon */}
+        <div className="flex items-center gap-3 px-4 py-3 bg-[#3B82F6] rounded-t-xl">
+          <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center">
+            <div className="w-2 h-2 rounded-full bg-[#3B82F6]"></div>
           </div>
-          <span className="text-[9px] font-mono text-slate-300 uppercase tracking-widest truncate max-w-[120px]">{data.label}</span>
+          <span className="text-[13px] font-semibold text-white">Buttons</span>
+          <button className="ml-auto text-white/70 hover:text-white">
+            <MoreHorizontal className="w-5 h-5" />
+          </button>
         </div>
+
+        {/* Body Content - Message + Buttons */}
+        <div className="p-4 flex-1 flex flex-col gap-3 bg-[#1E293B]">
+          {/* Message Box - White */}
+          <div className="bg-white rounded-md p-3 min-h-[50px]">
+            <p className="text-[13px] text-slate-800 leading-relaxed">{data.text || 'Text body'}</p>
+          </div>
+          
+          {/* Buttons List */}
+          <div className="flex flex-col gap-2">
+            {buttons.map((btn: any, idx: number) => (
+              <div key={idx} className="relative">
+                <div className="bg-gradient-to-r from-pink-500 to-rose-400 rounded-md px-4 py-3 flex items-center justify-between">
+                  <span className="text-[13px] font-medium text-white">{btn.label}</span>
+                  {btn.icon && (
+                    <span className="w-5 h-5 rounded-full border-2 border-white/50 flex items-center justify-center text-white text-xs">{btn.icon}</span>
+                  )}
+                </div>
+                {/* Teal output handle */}
+                <Handle 
+                  type="source" 
+                  position={Position.Right} 
+                  id={`btn-${idx}`}
+                  isConnectable={isConnectable}
+                  className="!w-6 !h-6 !bg-teal-400 !border-2 !border-white !rounded-full !-right-3 !top-1/2 !-translate-y-1/2 !absolute !z-10"
+                >
+                  <ArrowRight className="w-3 h-3 text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                </Handle>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-gradient-to-br from-[#1E293B] to-[#0F172A] rounded-xl border border-white/10 w-[220px] min-h-[140px] overflow-visible flex flex-col transition-all duration-300 hover:border-white/30 hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)] shadow-lg">
+      {/* Input Handle */}
+      <Handle type="target" position={Position.Left} isConnectable={isConnectable} 
+        className="!w-3 !h-8 !bg-slate-500 !border-2 !border-[#1E293B] !rounded-r-lg !-ml-1.5 !top-1/2 !-translate-y-1/2" />
+      
+      {/* Header with Gradient */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
+        <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${gradientFrom} ${gradientTo} flex items-center justify-center shadow-md`}>
+          <Icon className="w-4 h-4 text-white" />
+        </div>
+        <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wide">{headerText}</span>
         <button 
           onClick={(e) => {
             e.stopPropagation();
             data.onDelete(data.id);
           }}
-          className="text-slate-500 hover:text-red-400 transition-colors"
+          className="ml-auto text-slate-500 hover:text-red-400 transition-colors p-1 hover:bg-white/5 rounded"
         >
-          <Trash2 className="w-3 h-3" />
+          <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      {/* Body */}
-      <div className="p-3 bg-transparent flex-1 flex flex-col justify-center">
-        <p className="text-[10px] text-slate-400 font-mono line-clamp-5 leading-relaxed">{previewText}</p>
+      {/* Body Content */}
+      <div className="px-4 py-3 flex-1 flex flex-col justify-center">
+        <p className="text-[12px] text-slate-400 leading-relaxed line-clamp-3">{bodyText}</p>
       </div>
 
+      {/* Output Handle */}
       {data.type === 'condition' ? (
         <div className="flex flex-col border-t border-white/5">
-           <div className="relative flex items-center justify-between bg-black/10 text-slate-400 text-[10px] uppercase font-mono px-3 py-1.5 border-b border-white/5 hover:bg-white/5 transition-colors">
-             <span>True</span>
-             <Handle type="source" position={Position.Right} id="true" isConnectable={isConnectable} className="w-2 h-6 bg-green-500/80 border-none rounded-l-sm rounded-r-none -mr-[1px] !relative !right-[-13px] !transform-none" />
+           <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-white/[0.02]">
+             <span className="text-[10px] font-medium text-green-400">True</span>
+             <Handle type="source" position={Position.Right} id="true" isConnectable={isConnectable} 
+               className="!w-2.5 !h-6 !bg-green-500 !border-2 !border-[#1E293B] !rounded-l-md !-mr-1.5 !relative !top-0 !translate-y-0" />
            </div>
-           <div className="relative flex items-center justify-between bg-black/10 text-slate-400 text-[10px] uppercase font-mono px-3 py-1.5 hover:bg-white/5 transition-colors rounded-b-md">
-             <span>False</span>
-             <Handle type="source" position={Position.Right} id="false" isConnectable={isConnectable} className="w-2 h-6 bg-red-500/80 border-none rounded-l-sm rounded-r-none -mr-[1px] !relative !right-[-13px] !transform-none" />
+           <div className="flex items-center justify-between px-4 py-2 bg-white/[0.02]">
+             <span className="text-[10px] font-medium text-red-400">False</span>
+             <Handle type="source" position={Position.Right} id="false" isConnectable={isConnectable} 
+               className="!w-2.5 !h-6 !bg-red-500 !border-2 !border-[#1E293B] !rounded-l-md !-mr-1.5 !relative !top-0 !translate-y-0" />
            </div>
         </div>
       ) : (
-        <Handle type="source" position={Position.Right} isConnectable={isConnectable} className="w-2 h-6 bg-slate-500 border-none rounded-l-sm rounded-r-none -mr-[1px]" />
+        <Handle type="source" position={Position.Right} isConnectable={isConnectable} 
+          className="!w-3 !h-8 !bg-slate-500 !border-2 !border-[#1E293B] !rounded-l-lg !-mr-1.5 !top-1/2 !-translate-y-1/2" />
       )}
     </div>
   );
@@ -144,13 +220,12 @@ const CustomNode = ({ data, isConnectable }: any) => {
 
 const nodeTypes = { custom: CustomNode };
 
-const initialNodes: Node[] = [];
-const initialEdges: Edge[] = [];
-
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
 export default function Builder() {
+  const initialNodes: Node[] = [];
+  const initialEdges: Edge[] = [];
   const { botId } = useParams();
   const [searchParams] = useSearchParams();
   const prompt = searchParams.get('prompt');
@@ -158,8 +233,8 @@ export default function Builder() {
   const navigate = useNavigate();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -477,7 +552,7 @@ export default function Builder() {
     setSelectedNode(null);
   }, [setNodes, setEdges]);
 
-  const updateNodeData = (key: string, value: string) => {
+  const updateNodeData = (key: string, value: any) => {
     if (!selectedNode) return;
     
     setNodes((nds) =>
@@ -543,6 +618,8 @@ export default function Builder() {
     }
   };
 
+  const [menuSearchQuery, setMenuSearchQuery] = useState('');
+
   const [menuPosition, setMenuPosition] = useState<{ x: number, y: number } | null>(null);
   const [connectingNodeId, setConnectingNodeId] = useState<string | null>(null);
   const [connectingHandleId, setConnectingHandleId] = useState<string | null>(null);
@@ -554,20 +631,30 @@ export default function Builder() {
 
   const onConnectEnd = useCallback(
     (event: any) => {
-      if (!connectingNodeId || !reactFlowInstance) return;
-
-      const targetIsPane = event.target.classList.contains('react-flow__pane');
-
-      if (targetIsPane) {
-        const { clientX, clientY } = 'clientX' in event ? event : event.touches[0];
-        setMenuPosition({ x: clientX, y: clientY });
-      }
+      // Reset connection state when drag ends
+      setConnectingNodeId(null);
+      setConnectingHandleId(null);
     },
-    [connectingNodeId, reactFlowInstance]
+    [reactFlowInstance]
   );
 
-  const addAndConnectNode = (type: string) => {
-    if (!menuPosition || !reactFlowInstance || !connectingNodeId) return;
+  // Right-click handler to show menu
+  const onPaneContextMenu = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      if (!reactFlowInstance) return;
+      
+      // Reset connection state for standalone node
+      setConnectingNodeId(null);
+      setConnectingHandleId(null);
+      
+      setMenuPosition({ x: event.clientX, y: event.clientY });
+    },
+    [reactFlowInstance]
+  );
+
+  const addAndConnectNode = (type: string, specificLabel?: string) => {
+    if (!menuPosition || !reactFlowInstance) return;
 
     const position = reactFlowInstance.screenToFlowPosition({
       x: menuPosition.x,
@@ -575,17 +662,76 @@ export default function Builder() {
     });
 
     const newNodeId = getId();
-    let label = 'Node';
-    let defaultData = {};
+    let label = specificLabel || 'Node';
+    let defaultData: any = {};
 
     switch (type) {
-      case 'message': label = 'Message'; defaultData = { text: 'Hello!' }; break;
-      case 'input': label = 'User Input'; defaultData = { variable: 'name' }; break;
-      case 'condition': label = 'Condition'; defaultData = { variable: '', operator: 'equals', value: '' }; break;
-      case 'api': label = 'API Request'; defaultData = { url: 'https://api.example.com', method: 'GET' }; break;
-      case 'delay': label = 'Delay'; defaultData = { time: '3' }; break;
-      case 'image': label = 'Image'; defaultData = { url: '' }; break;
-      case 'ai': label = 'AI Response'; defaultData = { prompt: 'Summarize the conversation so far.' }; break;
+      case 'message': 
+        label = specificLabel || 'Message'; 
+        defaultData = { text: 'Hello! How can I help you today?' }; 
+        break;
+      case 'input': 
+        label = specificLabel || 'User Input'; 
+        defaultData = { variable: 'user_input' }; 
+        break;
+      case 'input_phone': 
+        label = 'Ask for phone'; 
+        defaultData = { type: 'input', variable: 'phone', label: 'Ask for phone' }; 
+        break;
+      case 'input_url': 
+        label = 'Ask for a Url'; 
+        defaultData = { type: 'input', variable: 'url', label: 'Ask for a Url' }; 
+        break;
+      case 'input_address': 
+        label = 'Ask for an address'; 
+        defaultData = { type: 'input', variable: 'address', label: 'Ask for an address' }; 
+        break;
+      case 'input_name': 
+        label = 'Ask for a name'; 
+        defaultData = { type: 'input', variable: 'name', label: 'Ask for a name' }; 
+        break;
+      case 'input_date': 
+        label = 'Ask for a date'; 
+        defaultData = { type: 'input', variable: 'date', label: 'Ask for a date' }; 
+        break;
+      case 'input_number': 
+        label = 'Ask for a number'; 
+        defaultData = { type: 'input', variable: 'number', label: 'Ask for a number' }; 
+        break;
+      case 'input_email': 
+        label = 'Ask for email'; 
+        defaultData = { type: 'input', variable: 'email', label: 'Ask for email' }; 
+        break;
+      case 'buttons': 
+        label = 'Buttons'; 
+        defaultData = { 
+          type: 'buttons', 
+          variable: 'choice', 
+          label: 'Buttons',
+          text: 'Choose an option:',
+          buttons: [{ label: 'Button' }, { label: 'Any of the above' }]
+        }; 
+        break;
+      case 'condition': 
+        label = 'Condition'; 
+        defaultData = { variable: '', operator: 'equals', value: '' }; 
+        break;
+      case 'api': 
+        label = 'API Request'; 
+        defaultData = { url: 'https://api.example.com', method: 'GET' }; 
+        break;
+      case 'delay': 
+        label = 'Delay'; 
+        defaultData = { time: '3' }; 
+        break;
+      case 'image': 
+        label = 'Image'; 
+        defaultData = { url: '' }; 
+        break;
+      case 'ai': 
+        label = 'AI Response'; 
+        defaultData = { prompt: 'Generate a helpful response based on the conversation.' }; 
+        break;
     }
 
     const newNode: Node = {
@@ -595,21 +741,53 @@ export default function Builder() {
       data: { 
         id: newNodeId,
         label,
-        type,
+        type: type === 'buttons' ? 'buttons' : type.startsWith('input_') ? 'input' : type,
         onDelete: deleteNode,
         ...defaultData
       },
     };
 
-    const newEdge: Edge = {
-      id: `e-${connectingNodeId}-${newNodeId}`,
-      source: connectingNodeId,
-      target: newNodeId,
-      sourceHandle: connectingHandleId,
-    };
-
     setNodes((nds) => nds.concat(newNode));
-    setEdges((eds) => eds.concat(newEdge));
+
+    // Only add edge if connecting from another node
+    if (connectingNodeId) {
+      const newEdge: Edge = {
+        id: `e-${connectingNodeId}-${newNodeId}`,
+        source: connectingNodeId,
+        target: newNodeId,
+        sourceHandle: connectingHandleId,
+      };
+      setEdges((eds) => eds.concat(newEdge));
+    }
+
+    setMenuPosition(null);
+    setConnectingNodeId(null);
+    setConnectingHandleId(null);
+  };
+
+  // Add standalone node from dock
+  const addStandaloneNode = () => {
+    if (!reactFlowInstance) return;
+    
+    // Reset connection state to ensure standalone node is created
+    setConnectingNodeId(null);
+    setConnectingHandleId(null);
+    
+    // Get center of viewport
+    const { x, y, zoom } = reactFlowInstance.getViewport();
+    const viewportWidth = reactFlowWrapper.current?.clientWidth || window.innerWidth;
+    const viewportHeight = reactFlowWrapper.current?.clientHeight || window.innerHeight;
+    
+    const centerX = (viewportWidth / 2 - x) / zoom;
+    const centerY = (viewportHeight / 2 - y) / zoom;
+
+    setMenuPosition({ 
+      x: viewportWidth / 2, 
+      y: viewportHeight / 2 
+    });
+  };
+
+  const closeMenu = () => {
     setMenuPosition(null);
     setConnectingNodeId(null);
     setConnectingHandleId(null);
@@ -694,6 +872,7 @@ export default function Builder() {
                 onInit={setReactFlowInstance}
                 onNodeClick={onNodeClick}
                 onPaneClick={onPaneClick}
+                onPaneContextMenu={onPaneContextMenu}
                 fitView
                 className="bg-transparent"
                 colorMode="dark"
@@ -705,16 +884,33 @@ export default function Builder() {
             </ReactFlowProvider>
           </div>
 
-          {/* Right Settings Panel */}
+          {/* Bottom Center Dock - Add Node Button */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[100]">
+            <div className="group relative">
+              <button 
+                onClick={addStandaloneNode}
+                className="w-12 h-12 rounded-2xl bg-gradient-to-r from-[#ff8a00] to-[#e52e71] flex items-center justify-center text-white shadow-[0_0_20px_rgba(255,138,0,0.4)] hover:shadow-[0_0_30px_rgba(255,138,0,0.6)] hover:scale-110 transition-all duration-300 border border-white/20"
+              >
+                <Plus className="w-6 h-6" />
+              </button>
+              {/* Tooltip */}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-[#1A1D24] border border-white/10 rounded-lg text-xs text-slate-300 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl">
+                Add Block
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1A1D24]" />
+              </div>
+            </div>
+          </div>
+
+          {/* Right Settings Panel - Floating Glass Effect */}
           {selectedNode && (
-            <div className="w-72 bg-[#1A1D24]/95 backdrop-blur-xl border-l border-white/10 z-20 flex flex-col animate-in slide-in-from-right-8 shadow-[inset_1px_0_1px_rgba(255,255,255,0.05)]">
+            <div className="w-72 mr-4 my-4 bg-[#1A1D24]/90 backdrop-blur-2xl rounded-2xl border border-white/10 z-20 flex flex-col animate-in slide-in-from-right-8 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] overflow-hidden">
               <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between bg-black/20">
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
                   <h2 className="text-[10px] font-mono text-slate-300 uppercase tracking-[0.2em]">Settings</h2>
                 </div>
-                <button onClick={() => setSelectedNode(null)} className="p-1 hover:bg-white/10 rounded text-slate-500 hover:text-white transition-colors">
-                  <X className="w-3.5 h-3.5" />
+                <button onClick={() => setSelectedNode(null)} className="p-1 hover:bg-white/10 rounded-lg text-slate-500 hover:text-white transition-colors">
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
@@ -853,6 +1049,141 @@ export default function Builder() {
                     </div>
                   </div>
                 )}
+
+                {/* Buttons Node Settings */}
+                {(selectedNode.data.type === 'buttons' || selectedNode.data.label === 'Buttons') && (
+                  <div className="space-y-5">
+                    {/* Message Text */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Write a message</label>
+                      <textarea 
+                        value={selectedNode.data.text as string || ''} 
+                        onChange={(e) => updateNodeData('text', e.target.value)}
+                        placeholder="Text body"
+                        className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50 transition-all text-xs min-h-[80px] resize-none font-mono"
+                      />
+                      {/* Formatting Toolbar */}
+                      <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                        <button className="px-2 py-1 hover:bg-white/10 rounded font-bold">B</button>
+                        <button className="px-2 py-1 hover:bg-white/10 rounded italic">I</button>
+                        <button className="px-2 py-1 hover:bg-white/10 rounded">😊</button>
+                        <button className="px-2 py-1 hover:bg-white/10 rounded">&lt;/&gt;</button>
+                        <button className="px-2 py-1 hover:bg-white/10 rounded">H</button>
+                        <button className="px-2 py-1 hover:bg-white/10 rounded">1.</button>
+                        <button className="px-2 py-1 hover:bg-white/10 rounded">•</button>
+                        <button className="px-2 py-1 hover:bg-white/10 rounded">🔗</button>
+                        <button className="px-2 py-1 hover:bg-white/10 rounded">"</button>
+                        <button className="ml-auto px-3 py-1 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded text-[9px]">Use field</button>
+                      </div>
+                    </div>
+
+                    {/* Add Message/Media Buttons */}
+                    <div className="flex gap-2">
+                      <button className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-md text-[10px] text-slate-300 hover:bg-white/10 transition-colors flex items-center justify-center gap-1">
+                        <span className="text-xs">+</span> Add message
+                      </button>
+                      <button className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-md text-[10px] text-slate-300 hover:bg-white/10 transition-colors flex items-center justify-center gap-1">
+                        <span className="text-xs">+</span> Add media
+                      </button>
+                    </div>
+
+                    {/* Buttons Editor */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Buttons editor</label>
+                      <div className="space-y-2">
+                        {(selectedNode.data.buttons || [{ label: 'Button' }]).map((btn: any, idx: number) => (
+                          <div key={idx} className="bg-gradient-to-r from-pink-500/80 to-rose-500/80 rounded-md px-3 py-2.5 flex items-center justify-between border border-white/10 group">
+                            <input
+                              type="text"
+                              value={btn.label}
+                              onChange={(e) => {
+                                const newButtons = [...(selectedNode.data.buttons || [])];
+                                newButtons[idx] = { ...newButtons[idx], label: e.target.value };
+                                updateNodeData('buttons', newButtons);
+                              }}
+                              className="bg-transparent text-[11px] font-medium text-white placeholder:text-white/50 focus:outline-none w-full mr-2"
+                              placeholder="Button text..."
+                            />
+                            <div className="flex items-center gap-1">
+                              <button className="text-white/60 hover:text-white p-1"><span className="text-xs">⋮⋮</span></button>
+                              <button 
+                                onClick={() => {
+                                  const newButtons = [...(selectedNode.data.buttons || [])];
+                                  newButtons.splice(idx, 1);
+                                  updateNodeData('buttons', newButtons);
+                                }}
+                                className="text-white/60 hover:text-red-300 p-1"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        {/* Add Another Button */}
+                        <button 
+                          onClick={() => {
+                            const newButtons = [...(selectedNode.data.buttons || []), { label: 'New Button' }];
+                            updateNodeData('buttons', newButtons);
+                          }}
+                          className="w-full px-3 py-2.5 bg-slate-700/50 border border-white/10 rounded-md text-[10px] text-slate-400 hover:bg-slate-700/70 transition-colors flex items-center gap-2"
+                        >
+                          <span className="w-5 h-5 rounded-full bg-slate-600 flex items-center justify-center text-white text-xs">+</span>
+                          Add another button
+                        </button>
+                      </div>
+                      <p className="text-[9px] text-slate-500 italic">Press ⚡ to set up icons/images/URLs to the buttons</p>
+                    </div>
+
+                    {/* Alignment Toggle */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Buttons alignment</label>
+                      <div className="flex bg-black/40 rounded-md p-1 border border-white/10">
+                        <button className="flex-1 px-3 py-1.5 text-[10px] text-slate-300 bg-white/10 rounded">HORIZONTAL</button>
+                        <button className="flex-1 px-3 py-1.5 text-[10px] text-slate-500 hover:text-slate-300">VERTICAL</button>
+                      </div>
+                    </div>
+
+                    {/* Toggle Options */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-slate-300">Randomize order</span>
+                        <div className="flex bg-black/40 rounded-md p-0.5 border border-white/10">
+                          <button className="px-3 py-1 text-[9px] text-slate-500 hover:text-slate-300">NO</button>
+                          <button className="px-3 py-1 text-[9px] text-slate-300 bg-white/10 rounded">YES</button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-slate-300">Searchable options</span>
+                        <div className="flex bg-black/40 rounded-md p-0.5 border border-white/10">
+                          <button className="px-3 py-1 text-[9px] text-slate-300 bg-white/10 rounded">NO</button>
+                          <button className="px-3 py-1 text-[9px] text-slate-500 hover:text-slate-300">YES</button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-slate-300">Multiple choices</span>
+                        <div className="flex bg-black/40 rounded-md p-0.5 border border-white/10">
+                          <button className="px-3 py-1 text-[9px] text-slate-300 bg-white/10 rounded">NO</button>
+                          <button className="px-3 py-1 text-[9px] text-slate-500 hover:text-slate-300">YES</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Save Answer Field */}
+                    <div className="space-y-2 pt-3 border-t border-white/10">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Save user answer in the field</label>
+                        <button className="w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 text-[8px] flex items-center justify-center border border-blue-500/30">i</button>
+                      </div>
+                      <input 
+                        value={selectedNode.data.variable as string || 'choice'} 
+                        onChange={(e) => updateNodeData('variable', e.target.value)}
+                        placeholder="Search or create"
+                        className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50 transition-all text-xs font-mono"
+                      />
+                      <p className="text-[9px] text-orange-400/80">If a field is not set, the answer won't be saved.</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -913,55 +1244,123 @@ export default function Builder() {
           </div>
         </div>
       )}
-      {/* Quick Add Menu */}
+      {/* Quick Add Menu - Dark Theme Matching App */}
       {menuPosition && (
         <div 
-          className="fixed z-[1000] w-64 bg-[#1A1D24]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
-          style={{ left: menuPosition.x, top: menuPosition.y }}
+          className="fixed z-[1000] w-72 bg-[#1A1D24]/98 backdrop-blur-2xl rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-white/10"
+          style={{ left: Math.min(menuPosition.x, window.innerWidth - 300), top: Math.min(menuPosition.y, window.innerHeight - 400) }}
         >
+          {/* Search Header */}
           <div className="p-3 border-b border-white/5 bg-black/20">
             <div className="relative">
               <input 
                 type="text"
+                value={menuSearchQuery}
+                onChange={(e) => setMenuSearchQuery(e.target.value)}
                 placeholder="Search by name"
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50"
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20"
               />
             </div>
           </div>
           
-          <div className="p-2 max-h-80 overflow-y-auto custom-scrollbar">
+          <div className="p-2 max-h-96 overflow-y-auto custom-scrollbar">
+            {/* AI Generation Option */}
             <button 
               onClick={() => addAndConnectNode('ai')}
               className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/5 transition-all group"
             >
-              <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 group-hover:bg-indigo-500/20 transition-colors">
-                <Bot className="w-4 h-4 text-indigo-400" />
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shadow-sm">
+                <Sparkles className="w-4 h-4 text-white" />
               </div>
               <div className="flex flex-col items-start">
-                <span className="text-xs font-bold text-slate-200">Build it for me!</span>
-                <span className="text-[9px] text-slate-500 uppercase tracking-widest">AI Generation</span>
+                <span className="text-sm font-semibold text-slate-200">Build it for me!</span>
+                <span className="text-[10px] text-slate-500 font-medium">AI Generation</span>
               </div>
             </button>
 
-            <div className="h-px bg-white/5 my-2 mx-2" />
+            <div className="h-px bg-white/5 my-2" />
+
+            {/* Input Blocks Category */}
+            <div className="mb-1">
+              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-2">Input Blocks</span>
+            </div>
+            
+            {[ 
+              { type: 'buttons', label: 'Buttons', icon: () => <div className="w-4 h-4 rounded bg-blue-400 flex items-center justify-center text-[8px] text-white font-bold">B</div>, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+              { type: 'input', label: 'Ask a question', icon: () => <span className="text-lg">📝</span>, color: 'text-slate-300', bg: 'bg-white/5' },
+              { type: 'input_date', label: 'Ask for a date', icon: () => <span className="text-lg">📅</span>, color: 'text-slate-300', bg: 'bg-white/5' },
+              { type: 'input_name', label: 'Ask for a name', icon: () => <span className="text-lg">👤</span>, color: 'text-slate-300', bg: 'bg-white/5' },
+              { type: 'input_number', label: 'Ask for a number', icon: () => <span className="text-lg">🔢</span>, color: 'text-slate-300', bg: 'bg-white/5' },
+              { type: 'input_phone', label: 'Ask for a phone', icon: Phone, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+              { type: 'input_url', label: 'Ask for a Url', icon: Link2, color: 'text-green-400', bg: 'bg-green-400/10' },
+              { type: 'input_address', label: 'Ask for an address', icon: MapPin, color: 'text-red-400', bg: 'bg-red-400/10' },
+              { type: 'input_email', label: 'Ask for email', icon: () => <span className="text-lg">📧</span>, color: 'text-slate-300', bg: 'bg-white/5' },
+            ].map((item) => (
+              <button 
+                key={item.label}
+                onClick={() => addAndConnectNode(item.type)}
+                className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-all group"
+              >
+                <div className={`w-7 h-7 rounded-md ${item.bg} flex items-center justify-center border border-white/5`}>
+                  {typeof item.icon === 'function' ? item.icon() : <item.icon className={`w-4 h-4 ${item.color}`} />}
+                </div>
+                <div className="flex flex-col items-start">
+                  <span className="text-sm font-medium text-slate-300 group-hover:text-white">{item.label}</span>
+                </div>
+              </button>
+            ))}
+
+            <div className="h-px bg-white/5 my-2" />
+
+            {/* Special Blocks Category */}
+            <div className="mb-1">
+              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-2">Special Blocks</span>
+            </div>
+
+            {[ 
+              { type: 'input', label: 'Auto-complete', icon: Bot, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
+              { type: 'input', label: 'Forms', icon: List, color: 'text-slate-400', bg: 'bg-white/5' },
+              { type: 'input', label: 'Opinion scale', icon: Star, color: 'text-orange-400', bg: 'bg-orange-400/10' },
+              { type: 'input', label: 'Picture choice', icon: ImageIcon, color: 'text-pink-400', bg: 'bg-pink-400/10' },
+              { type: 'input', label: 'Rating', icon: Star, color: 'text-amber-400', bg: 'bg-amber-400/10' },
+              { type: 'condition', label: 'Yes/No', icon: HelpCircle, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+            ].map((item) => (
+              <button 
+                key={item.label}
+                onClick={() => addAndConnectNode(item.type)}
+                className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-all group"
+              >
+                <div className={`w-7 h-7 rounded-md ${item.bg} flex items-center justify-center border border-white/5`}>
+                  <item.icon className={`w-4 h-4 ${item.color}`} />
+                </div>
+                <div className="flex flex-col items-start">
+                  <span className="text-sm font-medium text-slate-300 group-hover:text-white">{item.label}</span>
+                </div>
+              </button>
+            ))}
+
+            <div className="h-px bg-white/5 my-2" />
+
+            {/* Logic & Flow Category */}
+            <div className="mb-1">
+              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-2">Logic & Flow</span>
+            </div>
 
             {[
-              { type: 'message', label: 'Message', icon: MessageSquare, color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/20' },
-              { type: 'input', label: 'User Input', icon: TypeIcon, color: 'text-orange-400', bg: 'bg-orange-400/10', border: 'border-orange-400/20' },
-              { type: 'condition', label: 'Condition', icon: GitBranch, color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/20' },
-              { type: 'api', label: 'API Request', icon: Globe, color: 'text-green-400', bg: 'bg-green-400/10', border: 'border-green-400/20' },
-              { type: 'delay', label: 'Delay', icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-400/10', border: 'border-yellow-400/20' },
-              { type: 'image', label: 'Image', icon: ImageIcon, color: 'text-pink-400', bg: 'bg-pink-400/10', border: 'border-pink-400/20' },
+              { type: 'message', label: 'Message', icon: MessageSquare, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+              { type: 'condition', label: 'Condition', icon: GitBranch, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+              { type: 'delay', label: 'Delay', icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
+              { type: 'api', label: 'API Request', icon: Globe, color: 'text-green-400', bg: 'bg-green-400/10' },
             ].map((item) => (
               <button 
                 key={item.type}
                 onClick={() => addAndConnectNode(item.type)}
-                className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-all group"
+                className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-all group"
               >
-                <div className={`w-8 h-8 rounded-lg ${item.bg} flex items-center justify-center border ${item.border} group-hover:scale-110 transition-transform`}>
+                <div className={`w-7 h-7 rounded-md ${item.bg} flex items-center justify-center border border-white/5`}>
                   <item.icon className={`w-4 h-4 ${item.color}`} />
                 </div>
-                <span className="text-xs font-medium text-slate-300 group-hover:text-white transition-colors">{item.label}</span>
+                <span className="text-sm font-medium text-slate-300 group-hover:text-white">{item.label}</span>
               </button>
             ))}
           </div>
